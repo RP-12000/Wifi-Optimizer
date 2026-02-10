@@ -9,7 +9,7 @@ import org.kelvinizer.misc.interfaces.*;
  * <p>This class provides basic functionality for managing selection and focus states.</p>
  * @author Boyan Hu
  */
-public abstract class KButton implements Drawable, Scalable, Focusable {
+public abstract class CButton implements Drawable, Scalable, Focusable, Selectable {
 
     /** Indicates whether the button is currently selected. */
     protected boolean selected = false;
@@ -20,7 +20,7 @@ public abstract class KButton implements Drawable, Scalable, Focusable {
     /**
      * Constructs a new {@code KButton}.
      */
-    public KButton() {}
+    public CButton() {}
 
     /**
      * Sets the selection state of the button.
@@ -31,6 +31,10 @@ public abstract class KButton implements Drawable, Scalable, Focusable {
         selected = option;
     }
 
+    public void select() {
+        selected = !selected;
+    }
+
     /**
      * Checks whether the button is currently focused.
      *
@@ -38,5 +42,14 @@ public abstract class KButton implements Drawable, Scalable, Focusable {
      */
     public boolean isFocused() {
         return focused;
+    }
+
+    /**
+     * Checks whether the button is currently selected.
+     *
+     * @return {@code true} if the button is selected, {@code false} otherwise
+     */
+    public boolean isSelected() {
+        return selected;
     }
 }

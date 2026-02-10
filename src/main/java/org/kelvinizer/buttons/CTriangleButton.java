@@ -6,10 +6,10 @@ import java.awt.event.MouseEvent;
 
 /**
  * The {@code CTriangleButton} class represents a button with a triangular shape and two states: normal and focused.
- * It extends {@link KButton} and provides functionality for rendering, scaling, and focus handling.
+ * It extends {@link CButton} and provides functionality for rendering, scaling, and focus handling.
  * @author Boyan Hu
  */
-public class CTriangleButton extends KButton {
+public class CTriangleButton extends CButton {
     private CTriangle normal, onFocus;
     private CTriangle normalSpace, focusSpace;
 

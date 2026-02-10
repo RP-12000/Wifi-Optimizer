@@ -1,6 +1,8 @@
 package org.kelvinizer;
 
-import org.kelvinizer.animation.Params;
+import org.kelvinizer.params.GeneralParams;
+
+import javax.swing.*;
 
 /**
  * Main class of the program
@@ -9,6 +11,7 @@ import org.kelvinizer.animation.Params;
  */
 public class Main {
     public static void main(String[] args) {
-        Params.init();
+        GeneralParams.init(60,1080,720);
+        SwingUtilities.invokeLater(App::new);
     }
 }

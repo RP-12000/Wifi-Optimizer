@@ -1,9 +1,9 @@
-package org.kelvinizer.animation;
+package org.kelvinizer.params;
 
 /**
- * The {@code Params} class holds global parameters for the animation settings.
+ * The {@code Params} class holds global parameters for the animation back.
  */
-public class Params {
+public class GeneralParams {
     /**
      * Frames per second for the animation.
      */
@@ -19,6 +19,10 @@ public class Params {
      */
     public static int REF_WIN_H;
 
+    public static int extraWidth = 12;
+
+    public static int extraHeight = 35;
+
     /**
      * Initializes the parameters with the specified values.
      *
@@ -27,9 +31,9 @@ public class Params {
      * @param REF_WIN_H the reference window height
      */
     public static void init(long FPS, int REF_WIN_W, int REF_WIN_H) {
-        Params.FPS = FPS;
-        Params.REF_WIN_W = REF_WIN_W;
-        Params.REF_WIN_H = REF_WIN_H;
+        GeneralParams.FPS = FPS;
+        GeneralParams.REF_WIN_W = REF_WIN_W;
+        GeneralParams.REF_WIN_H = REF_WIN_H;
     }
 
     /**
@@ -42,8 +46,8 @@ public class Params {
      * </ul>
      */
     public static void init() {
-        Params.FPS = 60;
-        Params.REF_WIN_W = 800;
-        Params.REF_WIN_H = 600;
+        GeneralParams.FPS = 60;
+        GeneralParams.REF_WIN_W = 800;
+        GeneralParams.REF_WIN_H = 600;
     }
 }

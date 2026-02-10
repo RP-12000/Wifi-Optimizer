@@ -12,11 +12,11 @@ import java.util.Objects;
 
 /**
  * The {@code CRectButton} class represents a custom button with rectangular bounds and support for
- * different states (normal, focused, and selected). It extends {@link KButton} and provides
+ * different states (normal, focused, and selected). It extends {@link CButton} and provides
  * functionality for managing graphical representation and scaling.
  * @author Boyan Hu
  */
-public class CRectButton extends KButton {
+public class CRectButton extends CButton {
     private BoundedString normal;
     private BoundedString onFocus;
     private BoundedString onSelection = null;

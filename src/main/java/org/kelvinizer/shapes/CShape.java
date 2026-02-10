@@ -151,4 +151,6 @@ public abstract class CShape implements Drawable {
      * @param d the dimensions used for scaling
      */
     public abstract void scale(Dimension d);
+
+    public abstract CShape clone();
 }

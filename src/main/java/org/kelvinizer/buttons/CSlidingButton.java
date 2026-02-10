@@ -1,6 +1,6 @@
 package org.kelvinizer.buttons;
 
-import org.kelvinizer.animation.Params;
+import org.kelvinizer.params.GeneralParams;
 import org.kelvinizer.shapes.CRect;
 import org.kelvinizer.misc.objects.BoundedString;
 import org.kelvinizer.misc.interfaces.*;
@@ -13,7 +13,7 @@ import java.awt.event.MouseEvent;
  * The slider allows users to select a value within a defined range.
  * @author Boyan Hu
  */
-public class SlidingButton implements Focusable, Drawable, Scalable {
+public class CSlidingButton implements Focusable, Drawable, Scalable {
     private CRect base = new CRect();
     private CRectButton slider = new CRectButton();
     private BoundedString verdict = new BoundedString();
@@ -28,7 +28,7 @@ public class SlidingButton implements Focusable, Drawable, Scalable {
      * @param maxVal   the maximum value of the slider
      * @param startVal the initial value of the slider
      */
-    public SlidingButton(double minVal, double maxVal, double startVal) {
+    public CSlidingButton(double minVal, double maxVal, double startVal) {
         this.maxVal = maxVal;
         this.minVal = minVal;
         this.currentVal = startVal;
@@ -132,6 +132,6 @@ public class SlidingButton implements Focusable, Drawable, Scalable {
     @Override
     public void scale(Dimension d) {
         slider.scale(d);
-        mousePosScaleFactor = (double) d.width / Params.REF_WIN_W;
+        mousePosScaleFactor = (double) d.width / GeneralParams.REF_WIN_W;
     }
 }

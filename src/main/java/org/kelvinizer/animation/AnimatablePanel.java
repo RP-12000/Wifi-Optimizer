@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.kelvinizer.animation.Params.*;
+import static org.kelvinizer.params.GeneralParams.*;
 
 /**
  * The {@code AnimatablePanel} class is an extension of {@link JPanel} that implements
@@ -32,6 +32,7 @@ public class AnimatablePanel extends JPanel implements Animatable, MouseMotionLi
     protected final long start_duration;
     protected long end_duration;
     private final HashMap<Triple<Integer, Boolean, Integer>, Action> bindings = new HashMap<>();
+    protected Dimension panelSize = new Dimension(REF_WIN_W, REF_WIN_H);
 
     /**
      * Creates an {@code AnimatablePanel} with a specified start duration for the appearance animation.

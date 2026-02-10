@@ -1,9 +1,10 @@
 package org.kelvinizer.shapes;
 
 import org.kelvinizer.misc.objects.Pair;
-import org.kelvinizer.animation.Params;
+import org.kelvinizer.params.GeneralParams;
 
 import java.awt.*;
+import java.awt.event.MouseEvent;
 
 /**
  * Represents a rectangle shape with customizable position, size, and origin.
@@ -201,6 +202,10 @@ public class CRect extends CShape {
         this.y = y;
     }
 
+    public void setPosition(MouseEvent e, Dimension d){
+        setPosition((double) (e.getX()) / d.width * GeneralParams.REF_WIN_W, (double) (e.getY()) * GeneralParams.REF_WIN_H / d.height);
+    }
+
     /**
      * Scales the rectangle's position and size based on the specified dimensions.
      * The scaling is proportional to the reference window dimensions.
@@ -209,9 +214,34 @@ public class CRect extends CShape {
      */
     @Override
     public void scale(Dimension d) {
-        x = x / Params.REF_WIN_W * d.width;
-        y = y / Params.REF_WIN_H * d.height;
-        width = width / Params.REF_WIN_W * d.width;
-        height = height / Params.REF_WIN_H * d.height;
+        x = x / GeneralParams.REF_WIN_W * d.width;
+        y = y / GeneralParams.REF_WIN_H * d.height;
+        width = width / GeneralParams.REF_WIN_W * d.width;
+        height = height / GeneralParams.REF_WIN_H * d.height;
     }
+
+    @Override
+    public CRect clone() {
+        CRect copy = new CRect();
+
+        // 拷贝父类状态
+        copy.setFillColor(this.getFillColor());
+        copy.setOutlineColor(this.getOutlineColor());
+        copy.setOutlineThickness(this.getOutlineThickness());
+
+        // 拷贝基本类型
+        copy.x = this.x;
+        copy.y = this.y;
+        copy.width = this.width;
+        copy.height = this.height;
+
+        // ⭐ 关键：深拷贝 origin
+        copy.origin = new Pair<>(
+                this.origin.first,
+                this.origin.second
+        );
+
+        return copy;
+    }
+
 }

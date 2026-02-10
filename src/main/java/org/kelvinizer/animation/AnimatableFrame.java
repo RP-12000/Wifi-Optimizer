@@ -1,11 +1,13 @@
 package org.kelvinizer.animation;
 
+import org.kelvinizer.params.GeneralParams;
+
 import javax.swing.*;
 import java.util.concurrent.*;
 
 /**
  * The {@code AnimatableFrame} class provides an abstract base for creating a frame with animated
- * panels for the PianoTilesPro game. It extends {@link JFrame} and uses a scheduled executor
+ * display for the PianoTilesPro game. It extends {@link JFrame} and uses a scheduled executor
  * to run the game loop at a fixed frame rate.
  * Subclasses are required to implement the {@link #boot()} and {@link #runGame()} methods
  * to define initialization behavior and the game loop logic.
@@ -32,10 +34,10 @@ public abstract class AnimatableFrame extends JFrame {
      * The frame is made visible upon construction.
      */
     public AnimatableFrame() {
-        setSize(Params.REF_WIN_W, Params.REF_WIN_H);
+        setSize(GeneralParams.REF_WIN_W, GeneralParams.REF_WIN_H);
         boot();
         ScheduledExecutorService gameLoop = Executors.newSingleThreadScheduledExecutor();
-        gameLoop.scheduleAtFixedRate(this::runGame, 0, 1000 / Params.FPS, TimeUnit.MILLISECONDS);
+        gameLoop.scheduleAtFixedRate(this::runGame, 0, 1000 / GeneralParams.FPS, TimeUnit.MILLISECONDS);
         setVisible(true);
     }
 

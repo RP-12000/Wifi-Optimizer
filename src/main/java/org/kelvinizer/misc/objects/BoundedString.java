@@ -23,8 +23,8 @@ public class BoundedString implements Drawable {
     /** The font family of the string. Default is "Arial". */
     private String fontFamily = "Arial";
 
-    /** The style of the font. Default is {@link Font#BOLD}. */
-    private int style = Font.BOLD;
+    /** The style of the font. Default is {@link Font#PLAIN}. */
+    private int style = Font.PLAIN;
 
     /** The size of the string in pixels. */
     private int stringSize;
@@ -32,10 +32,10 @@ public class BoundedString implements Drawable {
     /** The color of the string. Default is white. */
     private Color stringColor = Color.WHITE;
 
-    /** Horizontal white space around the string within the bounds. */
+    /** Horizontal white space around the string within the bounds. Default is 3*/
     private double horizontalWhiteSpace = 3;
 
-    /** Vertical white space around the string within the bounds. */
+    /** Vertical white space around the string within the bounds. Default is 2*/
     private double verticalWhiteSpace = 2;
 
     /** The maximum size of the string. Default is -1, meaning no maximum. */
@@ -137,7 +137,7 @@ public class BoundedString implements Drawable {
     }
 
     /**
-     * Renders the string within the specified bounds using the current font settings.
+     * Renders the string within the specified bounds using the current font back.
      *
      * @param g2d The {@code Graphics2D} object used for rendering.
      */

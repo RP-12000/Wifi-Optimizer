@@ -2,7 +2,7 @@ package org.kelvinizer.shapes;
 
 import java.awt.*;
 
-import org.kelvinizer.animation.Params;
+import org.kelvinizer.params.GeneralParams;
 
 /**
  * Represents a triangle shape defined by three points.
@@ -112,13 +112,34 @@ public class CTriangle extends CShape {
      */
     @Override
     public void scale(Dimension d) {
-        x1 = x1 / Params.REF_WIN_W * d.width;
-        y1 = y1 / Params.REF_WIN_H * d.height;
-        x2 = x2 / Params.REF_WIN_W * d.width;
-        y2 = y2 / Params.REF_WIN_H * d.height;
-        x3 = x3 / Params.REF_WIN_W * d.width;
-        y3 = y3 / Params.REF_WIN_H * d.height;
+        x1 = x1 / GeneralParams.REF_WIN_W * d.width;
+        y1 = y1 / GeneralParams.REF_WIN_H * d.height;
+        x2 = x2 / GeneralParams.REF_WIN_W * d.width;
+        y2 = y2 / GeneralParams.REF_WIN_H * d.height;
+        x3 = x3 / GeneralParams.REF_WIN_W * d.width;
+        y3 = y3 / GeneralParams.REF_WIN_H * d.height;
     }
+
+    @Override
+    public CTriangle clone() {
+        CTriangle copy = new CTriangle();
+
+        // 拷贝父类状态
+        copy.setFillColor(this.getFillColor());
+        copy.setOutlineColor(this.getOutlineColor());
+        copy.setOutlineThickness(this.getOutlineThickness());
+
+        // 拷贝自身坐标（primitive，直接赋值）
+        copy.x1 = this.x1;
+        copy.y1 = this.y1;
+        copy.x2 = this.x2;
+        copy.y2 = this.y2;
+        copy.x3 = this.x3;
+        copy.y3 = this.y3;
+
+        return copy;
+    }
+
 
     /**
      * Returns the x-coordinate of the first point of the triangle.
