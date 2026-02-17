@@ -16,10 +16,9 @@ public class BorderParams {
     public static CRect boundaries = new CRect(BORDER_CENTER_X, BORDER_CENTER_Y, BORDER_SIZE, BORDER_SIZE);
 
     public static int DUPLICATE_DIST = 20;
-    public static final double AIR_LOSS_PER_UNIT = 1;
+    public static final double AIR_LOSS_PER_UNIT = 0.08;
 
     public static boolean changed = false;
-    public static boolean optimized = false;
     public static boolean isSaved = false;
 
     public static boolean shapeInBoarder(CShape shape) {

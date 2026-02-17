@@ -1,6 +1,5 @@
 package org.kelvinizer;
 
-import org.kelvinizer.animation.AnimatablePanel;
 import org.kelvinizer.params.GeneralParams;
 import org.kelvinizer.display.Display;
 
@@ -12,8 +11,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.kelvinizer.params.GeneralParams.REF_WIN_H;
+import static org.kelvinizer.params.GeneralParams.REF_WIN_W;
+
 public class App extends JFrame {
-    private AnimatablePanel display;
+    private Display display;
+    public static final Dimension panelSize = new Dimension(REF_WIN_W, REF_WIN_H);
 
     public App(){
         boot();
@@ -26,8 +29,8 @@ public class App extends JFrame {
         setTitle("Wifi Optimizer");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setBounds(0, 0,
-                GeneralParams.REF_WIN_W + GeneralParams.extraWidth,
-                GeneralParams.REF_WIN_H + GeneralParams.extraHeight
+                REF_WIN_W + GeneralParams.extraWidth,
+                REF_WIN_H + GeneralParams.extraHeight
         );
         display = new Display();
         add(display);
@@ -46,13 +49,9 @@ public class App extends JFrame {
     }
 
     private void runApp(){
-        display.setBounds(0, 0,
-                getSize().width - GeneralParams.extraWidth,
-                getSize().height - GeneralParams.extraHeight
-        );
-        display.scale(new Dimension(
-                getSize().width - GeneralParams.extraWidth,
-                getSize().height - GeneralParams.extraHeight
-        ));
+        panelSize.width = getSize().width - GeneralParams.extraWidth;
+        panelSize.height = getSize().height - GeneralParams.extraHeight;
+        display.setBounds(0, 0, panelSize.width, panelSize.height);
+        display.scale(panelSize);
     }
 }

@@ -32,7 +32,6 @@ public class AnimatablePanel extends JPanel implements Animatable, MouseMotionLi
     protected final long start_duration;
     protected long end_duration;
     private final HashMap<Triple<Integer, Boolean, Integer>, Action> bindings = new HashMap<>();
-    protected Dimension panelSize = new Dimension(REF_WIN_W, REF_WIN_H);
 
     /**
      * Creates an {@code AnimatablePanel} with a specified start duration for the appearance animation.

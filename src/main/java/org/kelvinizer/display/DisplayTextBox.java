@@ -145,6 +145,14 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
                 s+= c;
             }
         }
+        else if(c == '-'){
+            if(s.contains("-")){
+                s = s.substring(1);
+            }
+            else{
+                s = '-'+s;
+            }
+        }
         else{
             if(s.equals("0")){
                 s = "";

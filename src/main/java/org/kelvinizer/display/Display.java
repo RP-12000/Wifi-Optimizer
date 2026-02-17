@@ -20,14 +20,17 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
+import static org.kelvinizer.App.panelSize;
 import static org.kelvinizer.params.BorderParams.*;
 import static org.kelvinizer.params.ColorParams.*;
+import static org.kelvinizer.params.GeneralParams.REF_WIN_H;
 import static org.kelvinizer.params.GeneralParams.REF_WIN_W;
 import static org.kelvinizer.params.ObjectDimensionParams.*;
 
 public class Display extends AnimatablePanel {
     private final DisplayButtons buttons = new DisplayButtons();
     private final DisplayTextBox textBox = new DisplayTextBox();
+    private final MouseText mouseText = new MouseText();
     private boolean isButtonSelected = false;
 
     public static final ArrayList<CShape> shapes = new ArrayList<>();
@@ -44,6 +47,7 @@ public class Display extends AnimatablePanel {
     private Router currentRouter = null;
     private boolean initPlacement = false;
     private boolean inOptimizationProgress = false;
+    private boolean mouseInBorder = false;
 
     private final BoundedString fileNameDisplay = new BoundedString("");
 
@@ -210,12 +214,10 @@ public class Display extends AnimatablePanel {
         currentRouter = null;
         recalibrateWallMask();
         changed = true;
-        optimized = false;
     }
 
     public static void refreshStatus(){
         changed = true;
-        optimized = false;
         isSaved = false;
     }
 
@@ -246,10 +248,22 @@ public class Display extends AnimatablePanel {
                 textBox.updateText('.');
             }
         });
+        addKeyBinding(KeyEvent.VK_MINUS, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                textBox.updateText('-');
+            }
+        });
         addKeyBinding(KeyEvent.VK_DELETE, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 deleteThing();
+            }
+        });
+        addKeyBinding(KeyEvent.VK_D, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                duplicateThing();
             }
         });
         addKeyBinding(KeyEvent.VK_C, new AbstractAction() {
@@ -261,7 +275,7 @@ public class Display extends AnimatablePanel {
         addKeyBinding(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if(!optimized && selectedRouter != null){
+                if(selectedRouter != null){
                     optimize();
                 }
             }
@@ -278,22 +292,176 @@ public class Display extends AnimatablePanel {
                 load();
             }
         });
+
+        addKeyBinding(KeyEvent.VK_LEFT, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moveOrResize(-1, 0, false);
+            }
+        });
+        addKeyBinding(KeyEvent.VK_RIGHT, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moveOrResize(1, 0, false);
+            }
+        });
+        addKeyBinding(KeyEvent.VK_UP, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moveOrResize(0, -1, false);
+            }
+        });
+        addKeyBinding(KeyEvent.VK_DOWN, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moveOrResize(0, 1, false);
+            }
+        });
+
+        addKeyBinding(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moveOrResize(-1, 0, true);
+            }
+        });
+        addKeyBinding(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moveOrResize(1, 0, true);
+            }
+        });
+        addKeyBinding(KeyEvent.VK_UP, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moveOrResize(0, -1, true);
+            }
+        });
+        addKeyBinding(KeyEvent.VK_DOWN, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moveOrResize(0, 1, true);
+            }
+        });
+
+
         fileNameDisplay.setBounds(new CRect(105, 50, 180, 60));
         fileNameDisplay.getBounds().setFillColor(Color.WHITE);
-        fileNameDisplay.getBounds().setOutlineColor(Color.BLACK);
-        fileNameDisplay.getBounds().setOutlineThickness(3.0);
         fileNameDisplay.setStringColor(Color.BLACK);
         fileNameDisplay.setMaxStringSize(20);
         fileNameDisplay.setStyle(Font.BOLD);
         Random random = new Random();
         long number = Math.abs(random.nextLong()) % 1_000_000_0000L;
         fileNameDisplay.setString("Untitled_Design_"+String.format("%010d", number));
+
+        for(int i=0; i<signalStrength.length; i++){
+            for(int j=0; j<signalStrength[0].length; j++){
+                signalStrength[i][j] = Double.NEGATIVE_INFINITY;
+            }
+        }
+    }
+
+    private void moveOrResize(int dx, int dy, boolean ctrl) {
+        if(selectedShape instanceof CRect cr){
+            CRect test = cr.clone();
+            if(!ctrl){
+                test.setX(test.getX() + dx);
+                test.setY(test.getY() + dy);
+
+                if(shapeInBoarder(test)){
+                    cr.setX(test.getX());
+                    cr.setY(test.getY());
+                    recalibrateWallMask();
+                    refreshStatus();
+                }
+            }
+            else{
+                if(dx != 0){
+                    test.setWidth(Math.max(1, cr.getWidth() + dx));
+                }
+                if(dy != 0){
+                    test.setHeight(Math.max(1, cr.getHeight() + dy));
+                }
+
+                if(shapeInBoarder(test)){
+                    if(dx != 0){
+                        cr.setWidth(test.getWidth());
+                    }
+                    if(dy != 0){
+                        cr.setHeight(test.getHeight());
+                    }
+                    recalibrateWallMask();
+                    refreshStatus();
+                }
+            }
+
+            textBox.initializeText(selectedShape);
+        }
+
+        else if(selectedShape instanceof COval cr){
+            COval test = cr.clone();
+            if(!ctrl){
+                test.setX(test.getX() + dx);
+                test.setY(test.getY() + dy);
+                if(shapeInBoarder(test)){
+                    cr.setX(test.getX());
+                    cr.setY(test.getY());
+                    recalibrateWallMask();
+                    refreshStatus();
+                }
+            }
+            else{
+                if(dx != 0){
+                    test.setWidth(Math.max(1, cr.getWidth() + dx));
+                }
+                if(dy != 0){
+                    test.setHeight(Math.max(1, cr.getHeight() + dy));
+                }
+                if(shapeInBoarder(test)){
+                    if(dx != 0){
+                        cr.setWidth(test.getWidth());
+                    }
+                    if(dy != 0){
+                        cr.setHeight(test.getHeight());
+                    }
+                    recalibrateWallMask();
+                    refreshStatus();
+                }
+            }
+            textBox.initializeText(selectedShape);
+        }
+
+        else if(selectedRouter != null){
+            if(!ctrl){
+                Router test = selectedRouter.clone();
+                test.setX(selectedRouter.getX() + dx);
+                test.setY(selectedRouter.getY() + dy);
+
+                if(shapeInBoarder(test)){
+                    selectedRouter.setX(test.getX());
+                    selectedRouter.setY(test.getY());
+                    refreshStatus();
+                }
+            }
+            else{
+                if(dx != 0){
+                    selectedRouter.setInitialDBM(
+                            selectedRouter.getInitialDBM() + dx
+                    );
+                }
+                if(dy != 0){
+                    selectedRouter.setWallLoss(
+                            selectedRouter.getWallLoss() + dy
+                    );
+                }
+                refreshStatus();
+            }
+            textBox.initializeText(selectedRouter);
+        }
     }
 
     @Override
     public void scale(Dimension d){
         buttons.scale(d);
-        panelSize = d;
     }
 
     private void selectButton(Object button, boolean hasSelection){
@@ -356,7 +524,7 @@ public class Display extends AnimatablePanel {
         }
         selectedShape = null;
         for (CShape shape : shapes) {
-            if (shape.contains(e.getPoint())) {
+            if (shape.contains(e.getPoint(), panelSize)) {
                 selectedShape = shape;
                 textBox.initializeText(shape);
                 shape.setFillColor(colorSelected);
@@ -371,7 +539,7 @@ public class Display extends AnimatablePanel {
         }
         selectedRouter = null;
         for (Router r : routers) {
-            if (r.toJShape().contains(e.getPoint())) {
+            if (r.toJShape().contains((double) e.getX() / panelSize.width * REF_WIN_W, (double) e.getY() / panelSize.height * REF_WIN_H)) {
                 selectedRouter = r;
                 textBox.initializeText(r);
                 selectedRouter.setFillColor(routerSelectedColor);
@@ -401,6 +569,13 @@ public class Display extends AnimatablePanel {
         }
         else if(currentRouter != null){
             currentRouter.setPosition(e, panelSize);
+        }
+        if(boundaries.contains(e.getPoint(), panelSize)){
+            mouseText.updateStatus(e.getPoint(), panelSize);
+            mouseInBorder = true;
+        }
+        else{
+            mouseInBorder = false;
         }
     }
 
@@ -440,9 +615,8 @@ public class Display extends AnimatablePanel {
             else if(buttons.duplicate.isFocused()){
                 duplicateThing();
             }
-            else if(buttons.optimize.isFocused() && !optimized && selectedRouter != null){
+            else if(buttons.optimize.isFocused() && selectedRouter != null){
                 optimize();
-                optimized = true;
             }
             else if(buttons.save.isFocused()){
                 save();
@@ -460,7 +634,7 @@ public class Display extends AnimatablePanel {
                 recalibrateWallMask();
                 refreshStatus();
             }
-            else if(initPlacement && currentRouter != null){
+            else if(initPlacement && shapeInBoarder(currentRouter)){
                 currentRouter.setFillColor(routerPlacedColor);
                 currentRouter.recalibrateSignalStrength();
                 routers.add(currentRouter);
@@ -476,11 +650,24 @@ public class Display extends AnimatablePanel {
     }
 
     private double expCombine(double a, double b){
-        double diff = Math.abs(a - b);
-        if(diff >= 50){
-            return Math.max(a, b);
+        if(a == Double.NEGATIVE_INFINITY && b == Double.NEGATIVE_INFINITY){
+            return Double.NEGATIVE_INFINITY;
         }
-        return Math.min(a, b) + Math.log1p(Math.exp(diff));
+        else if(a == Double.NEGATIVE_INFINITY){
+            return b;
+        }
+        else if(b == Double.NEGATIVE_INFINITY){
+            return a;
+        }
+        else{
+            double diff = Math.abs(a - b);
+            if (diff >= 50) {
+                return Math.max(a, b);
+            }
+            double max = Math.max(a, b);
+            double min = Math.min(a, b);
+            return max + 10 * Math.log10(1 + Math.pow(10, (min - max) / 10));
+        }
     }
 
     private void recalibrateSignalStrength(){
@@ -507,7 +694,7 @@ public class Display extends AnimatablePanel {
     private void calculateSignalStrength(){
         for(int i=0; i<signalStrength.length; i++){
             for(int j=0; j<signalStrength[0].length; j++){
-                signalStrength[i][j] = -256;
+                signalStrength[i][j] = Double.NEGATIVE_INFINITY;
             }
         }
         for(Router r : routers){
@@ -523,9 +710,7 @@ public class Display extends AnimatablePanel {
         int score = 0;
         for(int i = 0; i < BORDER_SIZE; i++){
             for(int j = 0; j < BORDER_SIZE; j++){
-                if(expCombine(signalStrength[i][j], r.signal[i][j]) >= Router.MINIMUM_SIGNAL){
-                    score++;
-                }
+                score += (int) (Math.max(expCombine(signalStrength[i][j], r.signal[i][j]) - Router.MINIMUM_SIGNAL, 0));
             }
         }
         return score;
@@ -604,11 +789,7 @@ public class Display extends AnimatablePanel {
         int idx = 0;
         for (int y = 0; y < BORDER_SIZE; y++) {
             for (int x = 0; x < BORDER_SIZE; x++) {
-                double strength = signalStrength[x][y];
-                byte alpha = 0;
-                if(strength != Double.NEGATIVE_INFINITY){
-                    alpha = (byte) Math.clamp(255.0 + strength, 0, 255);
-                }
+                byte alpha = (byte) Math.min(255.0 * Math.pow(255, signalStrength[x][y] / 255), 255);
                 // ARGB: A R G B
                 signalPixels[idx++] =
                         (alpha << 24) |  (0x00FF00); // Green color with variable alpha
@@ -630,12 +811,6 @@ public class Display extends AnimatablePanel {
         }
         else{
             fileNameDisplay.getBounds().setFillColor(Color.WHITE);
-        }
-        if(optimized){
-            fileNameDisplay.getBounds().setOutlineColor(Color.GREEN);
-        }
-        else{
-            fileNameDisplay.getBounds().setOutlineColor(Color.RED);
         }
         fileNameDisplay.render(g2d);
         if(selectedShape != null){
@@ -668,6 +843,9 @@ public class Display extends AnimatablePanel {
         }
         for (Router r : routers) {
             r.render(g2d);
+        }
+        if(mouseInBorder){
+            mouseText.render(g2d);
         }
     }
 }

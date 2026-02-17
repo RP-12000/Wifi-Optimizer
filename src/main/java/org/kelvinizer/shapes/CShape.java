@@ -4,6 +4,9 @@ import org.kelvinizer.misc.interfaces.Drawable;
 
 import java.awt.*;
 
+import static org.kelvinizer.params.GeneralParams.REF_WIN_H;
+import static org.kelvinizer.params.GeneralParams.REF_WIN_W;
+
 /**
  * An abstract class representing a customizable shape with properties for fill color, outline color,
  * and outline thickness. It provides methods for rendering, checking point containment, and scaling.
@@ -134,6 +137,10 @@ public abstract class CShape implements Drawable {
      */
     public boolean contains(Point p) {
         return toJShape().contains(p);
+    }
+
+    public boolean contains(Point p, Dimension d) {
+        return toJShape().contains(p.getX() / d.width * REF_WIN_W, p.getY() / d.height * REF_WIN_H);
     }
 
     /**

@@ -18,7 +18,7 @@ public class Router extends COval {
             new double[BORDER_SIZE][BORDER_SIZE];
 
     public static final double MINIMUM_SIGNAL = -50;
-    public static final int CHUNK_SIZE = 2;
+    public static final int CHUNK_SIZE = 6;
 
     public Router(double x, double y, double txPowerDbm, double wallLossDb) {
         super(ROUTER_SIZE, ROUTER_SIZE);
@@ -52,8 +52,8 @@ public class Router extends COval {
         }
 
         PriorityQueue<Node> pq = new PriorityQueue<>();
-        signal[sx][sy] = - initialDBM;
-        pq.add(new Node(sx, sy, - initialDBM));
+        signal[sx][sy] = initialDBM;
+        pq.add(new Node(sx, sy, initialDBM));
 
         while (!pq.isEmpty()) {
             Node cur = pq.poll();
