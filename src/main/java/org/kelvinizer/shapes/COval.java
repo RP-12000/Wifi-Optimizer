@@ -109,18 +109,15 @@ public class COval extends CShape {
     public COval clone() {
         COval copy = new COval();
 
-        // 拷贝父类状态
         copy.setFillColor(this.getFillColor());
         copy.setOutlineColor(this.getOutlineColor());
         copy.setOutlineThickness(this.getOutlineThickness());
 
-        // 拷贝基本类型
         copy.x = this.x;
         copy.y = this.y;
         copy.width = this.width;
         copy.height = this.height;
 
-        // ⭐ 关键：深拷贝 origin
         copy.origin = new Pair<>(
                 this.origin.first,
                 this.origin.second

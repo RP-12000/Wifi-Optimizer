@@ -2,50 +2,106 @@ package org.kelvinizer.display;
 
 import org.kelvinizer.shapes.COval;
 
-import java.awt.*;
+import java.util.PriorityQueue;
 
 import static org.kelvinizer.params.BorderParams.*;
 import static org.kelvinizer.params.ColorParams.routerPlacedColor;
-import static org.kelvinizer.params.ObjectDimensionParams.ROUTER_SIZE;
+import static org.kelvinizer.params.ObjectDimensionParams.*;
 
 public class Router extends COval {
+
     private double initialDBM;
-    private double decreaseRate;
 
-    private double decreaseFunction(double x, double y){
-        double distance = Math.sqrt(x*x + y*y);
-        return - initialDBM - decreaseRate * distance;
+    private double wallLoss;
+
+    public final double[][] signal =
+            new double[BORDER_SIZE][BORDER_SIZE];
+
+    public static final double MINIMUM_SIGNAL = -50;
+    public static final int CHUNK_SIZE = 2;
+
+    public Router(double x, double y, double txPowerDbm, double wallLossDb) {
+        super(ROUTER_SIZE, ROUTER_SIZE);
+        setFillColor(routerPlacedColor);
+        setPosition(x, y);
+        this.initialDBM = txPowerDbm;
+        this.wallLoss = wallLossDb;
+        recalibrateSignalStrength();
     }
 
-    public Router(double x, double y, double initialDBM, double decreaseRate){
-        super(ROUTER_SIZE,ROUTER_SIZE);
-        super.setFillColor(routerPlacedColor);
-        super.setPosition(x, y);
-        this.initialDBM = initialDBM;
-        this.decreaseRate = decreaseRate;
+    public Router(double txPowerDbm, double wallLossDb) {
+        this(BORDER_CENTER_X, BORDER_CENTER_Y, txPowerDbm, wallLossDb);
     }
 
-    public Router(double initialDBM, double decreaseRate) {
-        this(BORDER_CENTER_X, BORDER_CENTER_Y, initialDBM, decreaseRate);
+    public Router(){
+        this(DEFAULT_INITIAL_DBM, DEFAULT_WALL_LOSS);
     }
 
-    public void calculateSignalStrength(){
-        double[][] signalStrength = new double[BORDER_SIZE][BORDER_SIZE];
-        for(int i = 0; i < signalStrength.length; i++){
-            for(int j = 0; j < signalStrength[0].length; j++){
-                double trueX = getX() - (i + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
-                double trueY = getY() - (j + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
-                double signal = decreaseFunction(trueX, trueY);
-                double exponentDiff = Math.abs(Display.signalStrength[i][j] - signal);
-                if(exponentDiff >= 50){
-                    Display.signalStrength[i][j] = Math.max(Display.signalStrength[i][j], signal);
+    public void recalibrateSignalStrength() {
+        recalibrateSignalStrength(
+                (int) getX() + BORDER_SIZE / 2 - BORDER_CENTER_X,
+                (int) getY() + BORDER_SIZE / 2 - BORDER_CENTER_Y
+        );
+    }
+
+    public void recalibrateSignalStrength(int sx, int sy) {
+        for (int x = 0; x < BORDER_SIZE; x++) {
+            for (int y = 0; y < BORDER_SIZE; y++) {
+                signal[x][y] = Double.NEGATIVE_INFINITY;
+            }
+        }
+
+        PriorityQueue<Node> pq = new PriorityQueue<>();
+        signal[sx][sy] = - initialDBM;
+        pq.add(new Node(sx, sy, - initialDBM));
+
+        while (!pq.isEmpty()) {
+            Node cur = pq.poll();
+
+            if (cur.dbm < signal[cur.x][cur.y]) continue;
+
+            for (int[] d : DIRS) {
+                int nx = cur.x + d[0];
+                int ny = cur.y + d[1];
+
+                if (nx < 0 || ny < 0 ||
+                        nx > BORDER_SIZE - 1 ||
+                        ny > BORDER_SIZE - 1)
+                    continue;
+
+                double loss = AIR_LOSS_PER_UNIT;
+
+                // 墙体损耗
+                if (Display.wallMask[nx][ny]) {
+                    loss += wallLoss;
                 }
-                else{
-                    Display.signalStrength[i][j] =
-                            Math.min(Display.signalStrength[i][j], signal) +
-                                    Math.log(1.0+Math.exp(exponentDiff));
+
+                double nextDbm = cur.dbm - loss * Math.sqrt(d[0] * d[0] + d[1] * d[1]);
+                if (nextDbm > signal[nx][ny]) {
+                    signal[nx][ny] = nextDbm;
+                    pq.add(new Node(nx, ny, nextDbm));
                 }
             }
+        }
+    }
+
+    private static final int[][] DIRS = {
+            {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, -1}, {-1, 1}
+    };
+
+    private static class Node implements Comparable<Node> {
+        int x, y;
+        double dbm;
+
+        Node(int x, int y, double dbm) {
+            this.x = x;
+            this.y = y;
+            this.dbm = dbm;
+        }
+
+        @Override
+        public int compareTo(Node o) {
+            return Double.compare(o.dbm, this.dbm); // max-heap
         }
     }
 
@@ -55,20 +111,22 @@ public class Router extends COval {
 
     public void setInitialDBM(double initialDBM) {
         this.initialDBM = initialDBM;
+        recalibrateSignalStrength();
     }
 
-    public double getDecreaseRate() {
-        return decreaseRate;
+    public double getWallLoss() {
+        return wallLoss;
     }
 
-    public void setDecreaseRate(double decreaseRate) {
-        this.decreaseRate = decreaseRate;
+    public void setWallLoss(double wallLoss) {
+        this.wallLoss = wallLoss;
+        recalibrateSignalStrength();
     }
 
     @Override
-    public Router clone(){
-        Router r = new Router(this.getX(), this.getY(), initialDBM, decreaseRate);
-        r.setFillColor(this.getFillColor());
+    public Router clone() {
+        Router r = new Router(getX(), getY(), initialDBM, wallLoss);
+        r.setFillColor(getFillColor());
         return r;
     }
 }

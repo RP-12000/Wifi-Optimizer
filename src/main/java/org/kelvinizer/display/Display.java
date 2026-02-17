@@ -2,6 +2,7 @@ package org.kelvinizer.display;
 
 import org.kelvinizer.animation.AnimatablePanel;
 import org.kelvinizer.buttons.CRectButton;
+import org.kelvinizer.misc.objects.BoundedString;
 import org.kelvinizer.params.GeneralParams;
 import org.kelvinizer.shapes.COval;
 import org.kelvinizer.shapes.CRect;
@@ -13,13 +14,15 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
-import java.util.HashSet;
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
 
 import static org.kelvinizer.params.BorderParams.*;
 import static org.kelvinizer.params.ColorParams.*;
+import static org.kelvinizer.params.GeneralParams.REF_WIN_W;
 import static org.kelvinizer.params.ObjectDimensionParams.*;
 
 public class Display extends AnimatablePanel {
@@ -27,106 +30,45 @@ public class Display extends AnimatablePanel {
     private final DisplayTextBox textBox = new DisplayTextBox();
     private boolean isButtonSelected = false;
 
-    private final HashSet<CShape> shapes = new HashSet<>();
-    private final HashSet<Router> routers = new HashSet<>();
-    private CShape selectedShape = null;
-    private Router selectedRouter = null;
+    public static final ArrayList<CShape> shapes = new ArrayList<>();
+    public static final boolean[][] wallMask = new boolean[BORDER_SIZE][BORDER_SIZE];
+    private final ArrayList<Router> routers = new ArrayList<>();
+    public static CShape selectedShape = null;
+    public static Router selectedRouter = null;
 
     public static final double[][] signalStrength = new double[BORDER_SIZE][BORDER_SIZE];
     private final int[] signalPixels;
     private final BufferedImage signalMap;
 
-    private final CRect boundaries = new CRect(BORDER_CENTER_X,BORDER_CENTER_Y, BORDER_SIZE, BORDER_SIZE);
     private CShape currentShape = null;
     private Router currentRouter = null;
-
     private boolean initPlacement = false;
-    private boolean changed = false;
-    private boolean optimized = false;
+    private boolean inOptimizationProgress = false;
 
-    private boolean shapeInBoarder(CShape shape) {
-        if(shape instanceof CRect) {
-            Rectangle r = ((CRect) shape).toJShape();
-            Rectangle b = boundaries.toJShape();
-            return b.contains(r);
-        }
-        else if(shape instanceof COval){
-            Ellipse2D.Double o = ((COval) shape).toJShape();
-            Rectangle b = boundaries.toJShape();
-            return b.contains(o.getBounds());
-        }
-        else{
-            return false;
-        }
-    }
-
-    private void bindingUpdates(String s){
-        try{
-            if(selectedShape instanceof CRect cr){
-                if(textBox.posX.isSelected()){
-                    cr.setX(Double.parseDouble(s));
-                }
-                else if(textBox.posY.isSelected()){
-                    cr.setY(Double.parseDouble(s));
-                }
-                else if(textBox.width.isSelected()){
-                    cr.setWidth(Double.parseDouble(s));
-                }
-                else if(textBox.height.isSelected()){
-                    cr.setHeight(Double.parseDouble(s));
-                }
-            }
-            else if(selectedShape instanceof COval cr){
-                if(textBox.posX.isSelected()){
-                    cr.setX(Double.parseDouble(s));
-                }
-                else if(textBox.posY.isSelected()){
-                    cr.setY(Double.parseDouble(s));
-                }
-                else if(textBox.width.isSelected()){
-                    cr.setWidth(Double.parseDouble(s));
-                }
-                else if(textBox.height.isSelected()){
-                    cr.setHeight(Double.parseDouble(s));
-                }
-            }
-            else if(selectedRouter != null){
-                if(textBox.posX.isSelected()){
-                    selectedRouter.setX(Double.parseDouble(s));
-                }
-                else if(textBox.posY.isSelected()){
-                    selectedRouter.setY(Double.parseDouble(s));
-                }
-                else if(textBox.initial.isSelected()){
-                    selectedRouter.setInitialDBM(Double.parseDouble(s));
-                }
-                else if(textBox.decrease.isSelected()){
-                    selectedRouter.setDecreaseRate(Double.parseDouble(s));
-                }
-                changed = true;
-            }
-            else{
-                System.err.println("Invalid Shape");
-            }
-        } catch (NumberFormatException _){}
-    }
+    private final BoundedString fileNameDisplay = new BoundedString("");
 
     private void bindNumbers(int num){
         addKeyBinding(0x30 + num, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(selectedShape != null || selectedRouter != null){
-                    bindingUpdates(textBox.updateText((char) ('0' + num)));
+                    textBox.updateText((char) ('0' + num));
                 }
             }
         });
     }
 
     private void deleteThing(){
-        shapes.remove(selectedShape);
-        routers.remove(selectedRouter);
-        selectedShape = null;
-        selectedRouter = null;
+        if(selectedShape != null){
+            shapes.remove(selectedShape);
+            selectedShape = null;
+            recalibrateWallMask();
+        }
+        else{
+            routers.remove(selectedRouter);
+            selectedRouter = null;
+        }
+        refreshStatus();
     }
 
     private void duplicateThing(){
@@ -153,6 +95,7 @@ public class Display extends AnimatablePanel {
             else{
                 System.err.println("Invalid Shape");
             }
+            recalibrateWallMask();
         }
         else if(selectedRouter != null){
             Router newRouter = selectedRouter.clone();
@@ -163,8 +106,99 @@ public class Display extends AnimatablePanel {
             selectedRouter.setFillColor(routerPlacedColor);
             selectedRouter = newRouter;
             routers.add(newRouter);
-            changed = true;
         }
+        refreshStatus();
+    }
+
+    private void save() {
+        try {
+            Path layoutDir = Paths.get("Layouts");
+            if (!Files.exists(layoutDir)) {
+                Files.createDirectory(layoutDir);
+            }
+            Path filePath = layoutDir.resolve(fileNameDisplay.getString()+".layout");
+            try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
+
+                for (CShape s : shapes) {
+                    if (s instanceof CRect r) {
+                        writer.write(String.format("1 %.4f %.4f %.4f %.4f",
+                                r.getX(), r.getY(),
+                                r.getWidth(), r.getHeight()));
+                    } else if (s instanceof COval o) {
+                        writer.write(String.format("2 %.4f %.4f %.4f %.4f",
+                                o.getX(), o.getY(),
+                                o.getWidth(), o.getHeight()));
+                    }
+                    writer.newLine();
+                }
+
+                for (Router r : routers) {
+                    writer.write(String.format("3 %.4f %.4f %.4f %.4f",
+                            r.getX(), r.getY(),
+                            r.getInitialDBM(), r.getWallLoss()));
+                    writer.newLine();
+                }
+            }
+            isSaved = true;
+        } catch (IOException _) {}
+    }
+
+    private void load() {
+        try {
+            Path layoutDir = Paths.get("Layouts");
+            if (!Files.exists(layoutDir)) {
+                Files.createDirectory(layoutDir);
+            }
+
+            JFileChooser chooser = new JFileChooser(layoutDir.toFile());
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                    "Layout Files", "layout"));
+
+            int result = chooser.showOpenDialog(this);
+            if (result != JFileChooser.APPROVE_OPTION) {
+                return;
+            }
+            File file = chooser.getSelectedFile();
+            clearShape();
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length != 5) continue;
+                    int type = Integer.parseInt(parts[0]);
+                    double a = Double.parseDouble(parts[1]);
+                    double b = Double.parseDouble(parts[2]);
+                    double c = Double.parseDouble(parts[3]);
+                    double d = Double.parseDouble(parts[4]);
+                    switch (type) {
+                        case 1 -> {
+                            CRect r = new CRect(a, b, c, d);
+                            r.setFillColor(colorPlaced);
+                            shapes.add(r);
+                        }
+                        case 2 -> {
+                            COval o = new COval(a, b, c, d);
+                            o.setFillColor(colorPlaced);
+                            shapes.add(o);
+                        }
+                        case 3 -> {
+                            Router r = new Router();
+                            r.setPosition(a, b);
+                            r.setInitialDBM(c);
+                            r.setWallLoss(d);
+                            r.setFillColor(routerPlacedColor);
+                            r.recalibrateSignalStrength();
+                            routers.add(r);
+                        }
+                    }
+                }
+            }
+            recalibrateWallMask();
+            refreshStatus();
+            isSaved = true;
+            fileNameDisplay.setString(file.getName().replace(".layout", ""));
+        } catch (Exception _) {}
     }
 
     private void clearShape(){
@@ -174,13 +208,22 @@ public class Display extends AnimatablePanel {
         selectedRouter = null;
         currentShape = null;
         currentRouter = null;
+        recalibrateWallMask();
+        changed = true;
+        optimized = false;
+    }
+
+    public static void refreshStatus(){
+        changed = true;
+        optimized = false;
+        isSaved = false;
     }
 
     /**
      * Creates an {@code AnimatablePanel} with a specified start duration for the appearance animation.
      */
     public Display() {
-        super(500, GeneralParams.REF_WIN_W, GeneralParams.REF_WIN_H);
+        super(500, REF_WIN_W, GeneralParams.REF_WIN_H);
         boundaries.setFillColor(BORDER_COLOR);
         signalMap = new BufferedImage(
                 BORDER_SIZE,BORDER_SIZE,
@@ -194,13 +237,13 @@ public class Display extends AnimatablePanel {
         addKeyBinding(KeyEvent.VK_BACK_SPACE, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                bindingUpdates(textBox.updateText('\b'));
+                textBox.updateText('\b');
             }
         });
         addKeyBinding(KeyEvent.VK_PERIOD, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                bindingUpdates(textBox.updateText('.'));
+                textBox.updateText('.');
             }
         });
         addKeyBinding(KeyEvent.VK_DELETE, new AbstractAction() {
@@ -215,6 +258,36 @@ public class Display extends AnimatablePanel {
                 clearShape();
             }
         });
+        addKeyBinding(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(!optimized && selectedRouter != null){
+                    optimize();
+                }
+            }
+        });
+        addKeyBinding(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                save();
+            }
+        });
+        addKeyBinding(KeyEvent.VK_L, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                load();
+            }
+        });
+        fileNameDisplay.setBounds(new CRect(105, 50, 180, 60));
+        fileNameDisplay.getBounds().setFillColor(Color.WHITE);
+        fileNameDisplay.getBounds().setOutlineColor(Color.BLACK);
+        fileNameDisplay.getBounds().setOutlineThickness(3.0);
+        fileNameDisplay.setStringColor(Color.BLACK);
+        fileNameDisplay.setMaxStringSize(20);
+        fileNameDisplay.setStyle(Font.BOLD);
+        Random random = new Random();
+        long number = Math.abs(random.nextLong()) % 1_000_000_0000L;
+        fileNameDisplay.setString("Untitled_Design_"+String.format("%010d", number));
     }
 
     @Override
@@ -270,8 +343,6 @@ public class Display extends AnimatablePanel {
         }
 
         selectButton(buttons.delete, false);
-        selectButton(buttons.forward, false);
-        selectButton(buttons.back, false);
         selectButton(buttons.clear, false);
         selectButton(buttons.duplicate, false);
         selectButton(buttons.load, false);
@@ -285,7 +356,7 @@ public class Display extends AnimatablePanel {
         }
         selectedShape = null;
         for (CShape shape : shapes) {
-            if (shape.toJShape().contains(e.getPoint())) {
+            if (shape.contains(e.getPoint())) {
                 selectedShape = shape;
                 textBox.initializeText(shape);
                 shape.setFillColor(colorSelected);
@@ -337,8 +408,14 @@ public class Display extends AnimatablePanel {
     public void mouseClicked(MouseEvent e) {
         selectMenuButtons();
         if(isButtonSelected){
-            currentShape = null;
-            currentRouter = null;
+            if(currentShape != null){
+                currentShape.setFillColor(colorSelected);
+                currentShape = null;
+            }
+            if(currentRouter != null){
+                currentRouter.setFillColor(routerSelectedColor);
+                currentRouter = null;
+            }
             if(buttons.rectangle.isFocused()){
                 currentShape = new CRect(e.getX(), e.getY(), 50, 50);
                 currentShape.setFillColor(colorNotPlaced);
@@ -350,14 +427,12 @@ public class Display extends AnimatablePanel {
                 initPlacement = true;
             }
             else if(buttons.router.isFocused()) {
-                currentRouter = new Router(INITIAL_DBM, DECREASE_RATE);
+                currentRouter = new Router();
                 currentRouter.setFillColor(routerNotPlacedColor);
                 initPlacement = true;
             }
             else if(buttons.delete.isFocused()){
-                if(selectedShape != null){
-                    deleteThing();
-                }
+                deleteThing();
             }
             else if(buttons.clear.isFocused()){
                 clearShape();
@@ -365,9 +440,15 @@ public class Display extends AnimatablePanel {
             else if(buttons.duplicate.isFocused()){
                 duplicateThing();
             }
-            else if(buttons.optimize.isFocused() && !optimized){
+            else if(buttons.optimize.isFocused() && !optimized && selectedRouter != null){
                 optimize();
                 optimized = true;
+            }
+            else if(buttons.save.isFocused()){
+                save();
+            }
+            else if(buttons.load.isFocused()){
+                load();
             }
         }
         else{
@@ -376,17 +457,49 @@ public class Display extends AnimatablePanel {
                 shapes.add(currentShape);
                 currentShape = null;
                 initPlacement = false;
+                recalibrateWallMask();
+                refreshStatus();
             }
             else if(initPlacement && currentRouter != null){
                 currentRouter.setFillColor(routerPlacedColor);
+                currentRouter.recalibrateSignalStrength();
                 routers.add(currentRouter);
                 currentRouter = null;
                 initPlacement = false;
-                changed = true;
+                refreshStatus();
             }
             else{
                 selectShape(e);
                 selectRouter(e);
+            }
+        }
+    }
+
+    private double expCombine(double a, double b){
+        double diff = Math.abs(a - b);
+        if(diff >= 50){
+            return Math.max(a, b);
+        }
+        return Math.min(a, b) + Math.log1p(Math.exp(diff));
+    }
+
+    private void recalibrateSignalStrength(){
+        for(Router r : routers){
+            r.recalibrateSignalStrength();
+        }
+    }
+
+    public static void recalibrateWallMask(){
+        for (boolean[] booleans : wallMask) {
+            Arrays.fill(booleans, false);
+        }
+        for(int i=0; i<wallMask.length; i++){
+            for(int j=0; j<wallMask[i].length; j++){
+                for(CShape shape : shapes){
+                    if(shape.toJShape().contains(i - (double) BORDER_SIZE / 2 + BORDER_CENTER_X, j - (double) BORDER_SIZE / 2 + BORDER_CENTER_Y)){
+                        wallMask[i][j] = true;
+                    }
+                }
             }
         }
     }
@@ -398,11 +511,94 @@ public class Display extends AnimatablePanel {
             }
         }
         for(Router r : routers){
-            r.calculateSignalStrength();
+            for(int i = 0; i < r.signal.length; i++){
+                for(int j = 0; j < r.signal[0].length; j++){
+                    signalStrength[i][j] = expCombine(signalStrength[i][j], r.signal[i][j]);
+                }
+            }
         }
     }
 
-    private void optimize(){}
+    private int calculateScore(Router r){
+        int score = 0;
+        for(int i = 0; i < BORDER_SIZE; i++){
+            for(int j = 0; j < BORDER_SIZE; j++){
+                if(expCombine(signalStrength[i][j], r.signal[i][j]) >= Router.MINIMUM_SIGNAL){
+                    score++;
+                }
+            }
+        }
+        return score;
+    }
+
+    private Point optimize(Point upper, Point lower){
+        int width  = lower.x - upper.x;
+        int height = lower.y - upper.y;
+
+        if(width <= 2 || height <= 2){
+            return new Point(
+                    (lower.x+upper.x) / 2,
+                    (lower.y+upper.y) / 2
+            );
+        }
+
+        int dx = width / Router.CHUNK_SIZE;
+        int dy = height / Router.CHUNK_SIZE;
+
+        int bestScore = -1;
+        Point bestCenter = null;
+        Point bestUpper = null;
+        Point bestLower = null;
+
+        for(int i=0;i<Router.CHUNK_SIZE;i++){
+            for(int j=0;j<Router.CHUNK_SIZE;j++){
+
+                int x0 = upper.x + i*dx;
+                int y0 = upper.y + j*dy;
+
+                int x1 = (i==Router.CHUNK_SIZE-1) ? lower.x : x0 + dx;
+                int y1 = (j==Router.CHUNK_SIZE-1) ? lower.y : y0 + dy;
+
+                int cx = (x0 + x1) / 2;
+                int cy = (y0 + y1) / 2;
+
+                selectedRouter.recalibrateSignalStrength(cx, cy);
+
+                int score = calculateScore(selectedRouter);
+
+                if(bestCenter == null ||
+                        score > bestScore ||
+                        (score == bestScore &&
+                                (cx < bestCenter.x ||
+                                        (cx == bestCenter.x && cy < bestCenter.y)))){
+
+                    bestScore = score;
+                    bestCenter = new Point(cx, cy);
+                    bestUpper  = new Point(x0, y0);
+                    bestLower  = new Point(x1, y1);
+                }
+            }
+        }
+
+        return optimize(bestUpper, bestLower);
+    }
+
+    private void optimize(){
+        inOptimizationProgress = true;
+        routers.remove(selectedRouter);
+        recalibrateSignalStrength();
+        calculateSignalStrength();
+        Point p = optimize(new Point(0, 0), new Point(BORDER_SIZE, BORDER_SIZE));
+        selectedRouter.setPosition(
+                p.getX() - (double) BORDER_SIZE / 2 + BORDER_CENTER_X,
+                p.getY()- (double) BORDER_SIZE / 2 + BORDER_CENTER_Y
+        );
+        routers.add(selectedRouter);
+        selectedRouter.setFillColor(colorPlaced);
+        selectedRouter = null;
+        changed = true;
+        inOptimizationProgress = false;
+    }
 
     private void renderSignalStrength(Graphics2D g2d){
         int idx = 0;
@@ -410,7 +606,7 @@ public class Display extends AnimatablePanel {
             for (int x = 0; x < BORDER_SIZE; x++) {
                 double strength = signalStrength[x][y];
                 byte alpha = 0;
-                if(strength != Double.POSITIVE_INFINITY){
+                if(strength != Double.NEGATIVE_INFINITY){
                     alpha = (byte) Math.clamp(255.0 + strength, 0, 255);
                 }
                 // ARGB: A R G B
@@ -429,6 +625,19 @@ public class Display extends AnimatablePanel {
     @Override
     public void render(Graphics2D g2d) {
         buttons.render(g2d);
+        if(isSaved){
+            fileNameDisplay.getBounds().setFillColor(Color.GREEN);
+        }
+        else{
+            fileNameDisplay.getBounds().setFillColor(Color.WHITE);
+        }
+        if(optimized){
+            fileNameDisplay.getBounds().setOutlineColor(Color.GREEN);
+        }
+        else{
+            fileNameDisplay.getBounds().setOutlineColor(Color.RED);
+        }
+        fileNameDisplay.render(g2d);
         if(selectedShape != null){
             textBox.render(g2d);
             textBox.renderShape(g2d);
@@ -440,10 +649,11 @@ public class Display extends AnimatablePanel {
         boundaries.render(g2d);
 
         if (changed) {
+            recalibrateSignalStrength();
             calculateSignalStrength();
             changed = false;
         }
-        if (!routers.isEmpty()) {
+        if (!routers.isEmpty() && !inOptimizationProgress) {
             renderSignalStrength(g2d);
         }
 

@@ -5,6 +5,7 @@ import org.kelvinizer.misc.interfaces.Drawable;
 import org.kelvinizer.misc.interfaces.Focusable;
 import org.kelvinizer.misc.interfaces.Scalable;
 import org.kelvinizer.misc.objects.BoundedString;
+import org.kelvinizer.params.BorderParams;
 import org.kelvinizer.shapes.COval;
 import org.kelvinizer.shapes.CRect;
 import org.kelvinizer.shapes.CShape;
@@ -13,6 +14,8 @@ import org.kelvinizer.textbox.CRectTextBox;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 
+import static org.kelvinizer.params.BorderParams.*;
+
 public class DisplayTextBox implements Scalable, Drawable, Focusable {
     public final CRectTextBox posX = new CRectTextBox();
     public final CRectTextBox posY = new CRectTextBox();
@@ -20,6 +23,8 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
     public final CRectTextBox height = new CRectTextBox();
     public final CRectTextBox initial = new CRectTextBox();
     public final CRectTextBox decrease = new CRectTextBox();
+
+    int selection_status = 0;
 
     private void setTextBoxSelector(CRectTextBox c, String text, int y) {
         CRectButton button = new CRectButton();
@@ -58,27 +63,95 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
         entry.setString("0");
         C.setEntry(entry);
         C.setTextUpdateHandler((b, c) -> {
-            String s = b.getEntry().getString();
-            if (c == '\b') {
-                if (s.length() > 1) {
-                    b.getEntry().setString(s.substring(0, s.length() - 1));
+            String s = getUpdatedString(b, c);
+            b.getEntry().setString(s);
+            if(Display.selectedShape instanceof CRect cr){
+                CRect cr2 = cr.clone();
+                switch (selection_status){
+                    case 1 -> cr2.setX(Double.parseDouble(s) + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
+                    case 2 -> cr2.setY(Double.parseDouble(s) + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
+                    case 3 -> cr2.setWidth(Double.parseDouble(s));
+                    case 4 -> cr2.setHeight(Double.parseDouble(s));
+                    default -> {}
                 }
-                else{
-                    b.getEntry().setString("0");
+                if(BorderParams.shapeInBoarder(cr2)){
+                    switch (selection_status){
+                        case 1 -> cr.setX(Double.parseDouble(s) + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
+                        case 2 -> cr.setY(Double.parseDouble(s) + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
+                        case 3 -> cr.setWidth(Double.parseDouble(s));
+                        case 4 -> cr.setHeight(Double.parseDouble(s));
+                        default -> {}
+                    }
+                    Display.refreshStatus();
+                    Display.recalibrateWallMask();
                 }
             }
-            else if(c == '.'){
-                if(!s.contains(".")){
-                    b.getEntry().setString(s+c);
+            else if(Display.selectedShape instanceof COval cr){
+                COval cr2 = cr.clone();
+                switch (selection_status){
+                    case 1 -> cr2.setX(Double.parseDouble(s) + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
+                    case 2 -> cr2.setY(Double.parseDouble(s) + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
+                    case 3 -> cr2.setWidth(Double.parseDouble(s));
+                    case 4 -> cr2.setHeight(Double.parseDouble(s));
+                    default -> {}
+                }
+                if(BorderParams.shapeInBoarder(cr2)){
+                    switch (selection_status){
+                        case 1 -> cr.setX(Double.parseDouble(s) + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
+                        case 2 -> cr.setY(Double.parseDouble(s) + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
+                        case 3 -> cr.setWidth(Double.parseDouble(s));
+                        case 4 -> cr.setHeight(Double.parseDouble(s));
+                        default -> {}
+                    }
+                    Display.refreshStatus();
+                    Display.recalibrateWallMask();
                 }
             }
-            else{
-                if(s.equals("0")){
-                    s = "";
+            else if(Display.selectedRouter != null){
+                Router sr = Display.selectedRouter.clone();
+                switch (selection_status){
+                    case 1 -> sr.setX(Double.parseDouble(s) + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
+                    case 2 -> sr.setY(Double.parseDouble(s) + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
+                    case 3 -> sr.setInitialDBM(Double.parseDouble(s));
+                    case 4 -> sr.setWallLoss(Double.parseDouble(s));
+                    default -> {}
                 }
-                b.getEntry().setString(s+c);
+                if(BorderParams.shapeInBoarder(sr)){
+                    switch (selection_status){
+                        case 1 -> Display.selectedRouter.setX(Double.parseDouble(s) + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
+                        case 2 -> Display.selectedRouter.setY(Double.parseDouble(s) + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
+                        case 3 -> Display.selectedRouter.setInitialDBM(Double.parseDouble(s));
+                        case 4 -> Display.selectedRouter.setWallLoss(Double.parseDouble(s));
+                        default -> {}
+                    }
+                    Display.refreshStatus();
+                }
             }
         });
+    }
+
+    private static String getUpdatedString(CRectTextBox b, char c) {
+        String s = b.getEntry().getString();
+        if (c == '\b') {
+            if (s.length() > 1) {
+                s = s.substring(0, s.length() - 1);
+            }
+            else{
+                s = "0";
+            }
+        }
+        else if(c == '.'){
+            if(!s.contains(".")){
+                s+= c;
+            }
+        }
+        else{
+            if(s.equals("0")){
+                s = "";
+            }
+            s+= c;
+        }
+        return s;
     }
 
     public DisplayTextBox() {
@@ -145,44 +218,44 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
         decrease.scale(d);
     }
 
-    public String updateText(char c){
+    public void updateText(char c){
         if(posX.isSelected()){
+            selection_status = 1;
             posX.updateText(c);
-            return posX.getEntry().getString();
         }
         else if(posY.isSelected()){
+            selection_status = 2;
             posY.updateText(c);
-            return posY.getEntry().getString();
         }
         else if(width.isSelected()){
+            selection_status = 3;
             width.updateText(c);
-            return width.getEntry().getString();
         }
         else if(height.isSelected()){
+            selection_status = 4;
             height.updateText(c);
-            return height.getEntry().getString();
         }
         else if(initial.isSelected()){
+            selection_status = 3;
             initial.updateText(c);
-            return initial.getEntry().getString();
         }
         else if(decrease.isSelected()){
+            selection_status = 4;
             decrease.updateText(c);
-            return decrease.getEntry().getString();
         }
-        return "";
+        selection_status = 0;
     }
 
     public void initializeText(CShape c){
         if(c instanceof CRect cr){
-            posX.getEntry().setString(Integer.toString((int)(cr.getX())));
-            posY.getEntry().setString(Integer.toString((int)(cr.getY())));
+            posX.getEntry().setString(Integer.toString((int)(cr.getX()) - BORDER_CENTER_X + BORDER_SIZE / 2));
+            posY.getEntry().setString(Integer.toString((int)(cr.getY()) - BORDER_CENTER_Y + BORDER_SIZE / 2));
             width.getEntry().setString(Integer.toString((int)(cr.getWidth())));
             height.getEntry().setString(Integer.toString((int)(cr.getHeight())));
         }
         else if (c instanceof COval co) {
-            posX.getEntry().setString(Integer.toString((int)(co.getX())));
-            posY.getEntry().setString(Integer.toString((int)(co.getY())));
+            posX.getEntry().setString(Integer.toString((int)(co.getX()) - BORDER_CENTER_X + BORDER_SIZE / 2));
+            posY.getEntry().setString(Integer.toString((int)(co.getY()) - BORDER_CENTER_Y + BORDER_SIZE / 2));
             width.getEntry().setString(Integer.toString((int)(co.getWidth())));
             height.getEntry().setString(Integer.toString((int)(co.getHeight())));
         }
@@ -192,9 +265,9 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
     }
 
     public void initializeText(Router r){
-        posX.getEntry().setString(Integer.toString((int)(r.getX())));
-        posY.getEntry().setString(Integer.toString((int)(r.getY())));
+        posX.getEntry().setString(Integer.toString((int)(r.getX()) - BORDER_CENTER_X + BORDER_SIZE / 2));
+        posY.getEntry().setString(Integer.toString((int)(r.getY()) - BORDER_CENTER_Y + BORDER_SIZE / 2));
         initial.getEntry().setString(Double.toString((r.getInitialDBM())));
-        decrease.getEntry().setString(Double.toString(r.getDecreaseRate()));
+        decrease.getEntry().setString(Double.toString(r.getWallLoss()));
     }
 }

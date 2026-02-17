@@ -15,8 +15,6 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
     public final CRectButton oval = new  CRectButton();
     public final CRectButton router = new CRectButton();
 
-    public final CRectButton back = new CRectButton();
-    public final CRectButton forward = new CRectButton();
     public final CRectButton optimize = new CRectButton();
     public final CRectButton save = new CRectButton();
     public final CRectButton delete = new CRectButton();
@@ -55,11 +53,9 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
     }
 
     public DisplayButtons() {
-        setShapeButton(rectangle, "rectangle", 40);
-        setShapeButton(oval, "oval", 140);
-        setShapeButton(router, "router", 240);
-        setShapeButton(back, "back", 340);
-        setShapeButton(forward, "forward", 440);
+        setShapeButton(rectangle, "rectangle", 240);
+        setShapeButton(oval, "oval", 340);
+        setShapeButton(router, "router", 440);
         setShapeButton(save, "save", 540);
         setShapeButton(delete, "delete", 640);
         setShapeButton(duplicate, "duplicate", 740);
@@ -80,8 +76,6 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
         router.render(g2d);
 
         optimize.render(g2d);
-        back.render(g2d);
-        forward.render(g2d);
         save.render(g2d);
         delete.render(g2d);
         duplicate.render(g2d);
@@ -101,8 +95,6 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
         router.setFocused(e);
 
         optimize.setFocused(e);
-        back.setFocused(e);
-        forward.setFocused(e);
         save.setFocused(e);
         delete.setFocused(e);
         duplicate.setFocused(e);
@@ -122,8 +114,6 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
         router.scale(d);
 
         optimize.scale(d);
-        back.scale(d);
-        forward.scale(d);
         save.scale(d);
         delete.scale(d);
         duplicate.scale(d);
