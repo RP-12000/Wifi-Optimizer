@@ -221,6 +221,12 @@ public class Display extends AnimatablePanel {
         isSaved = false;
     }
 
+    private String generateRandomLayoutName(){
+        Random random = new Random();
+        long number = Math.abs(random.nextLong()) % 1_000_000_0000L;
+        return "Untitled_Design_"+String.format("%010d", number);
+    }
+
     /**
      * Creates an {@code AnimatablePanel} with a specified start duration for the appearance animation.
      */
@@ -292,67 +298,69 @@ public class Display extends AnimatablePanel {
                 load();
             }
         });
-
+        addKeyBinding(KeyEvent.VK_N, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                save();
+                clearShape();
+                fileNameDisplay.setString(generateRandomLayoutName());
+            }
+        });
         addKeyBinding(KeyEvent.VK_LEFT, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                moveOrResize(-1, 0, false);
+                keyboardMoveOrResize(-1, 0, false);
             }
         });
         addKeyBinding(KeyEvent.VK_RIGHT, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                moveOrResize(1, 0, false);
+                keyboardMoveOrResize(1, 0, false);
             }
         });
         addKeyBinding(KeyEvent.VK_UP, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                moveOrResize(0, -1, false);
+                keyboardMoveOrResize(0, -1, false);
             }
         });
         addKeyBinding(KeyEvent.VK_DOWN, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                moveOrResize(0, 1, false);
+                keyboardMoveOrResize(0, 1, false);
             }
         });
 
         addKeyBinding(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                moveOrResize(-1, 0, true);
+                keyboardMoveOrResize(-1, 0, true);
             }
         });
         addKeyBinding(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                moveOrResize(1, 0, true);
+                keyboardMoveOrResize(1, 0, true);
             }
         });
         addKeyBinding(KeyEvent.VK_UP, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                moveOrResize(0, -1, true);
+                keyboardMoveOrResize(0, -1, true);
             }
         });
         addKeyBinding(KeyEvent.VK_DOWN, KeyEvent.CTRL_DOWN_MASK, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                moveOrResize(0, 1, true);
+                keyboardMoveOrResize(0, 1, true);
             }
         });
-
-
         fileNameDisplay.setBounds(new CRect(105, 50, 180, 60));
         fileNameDisplay.getBounds().setFillColor(Color.WHITE);
         fileNameDisplay.setStringColor(Color.BLACK);
         fileNameDisplay.setMaxStringSize(20);
         fileNameDisplay.setStyle(Font.BOLD);
-        Random random = new Random();
-        long number = Math.abs(random.nextLong()) % 1_000_000_0000L;
-        fileNameDisplay.setString("Untitled_Design_"+String.format("%010d", number));
-
+        fileNameDisplay.setString(generateRandomLayoutName());
         for(int i=0; i<signalStrength.length; i++){
             for(int j=0; j<signalStrength[0].length; j++){
                 signalStrength[i][j] = Double.NEGATIVE_INFINITY;
@@ -360,100 +368,94 @@ public class Display extends AnimatablePanel {
         }
     }
 
-    private void moveOrResize(int dx, int dy, boolean ctrl) {
+    private void mouseMoveOrResize(MouseEvent e){
         if(selectedShape instanceof CRect cr){
             CRect test = cr.clone();
-            if(!ctrl){
-                test.setX(test.getX() + dx);
-                test.setY(test.getY() + dy);
-
-                if(shapeInBoarder(test)){
-                    cr.setX(test.getX());
-                    cr.setY(test.getY());
-                    recalibrateWallMask();
-                    refreshStatus();
-                }
+            test.setPosition(e, panelSize);
+            if(shapeInBoarder(test)){
+                cr.setPosition(e, panelSize);
+                recalibrateWallMask();
+                refreshStatus();
             }
-            else{
-                if(dx != 0){
-                    test.setWidth(Math.max(1, cr.getWidth() + dx));
-                }
-                if(dy != 0){
-                    test.setHeight(Math.max(1, cr.getHeight() + dy));
-                }
-
-                if(shapeInBoarder(test)){
-                    if(dx != 0){
-                        cr.setWidth(test.getWidth());
-                    }
-                    if(dy != 0){
-                        cr.setHeight(test.getHeight());
-                    }
-                    recalibrateWallMask();
-                    refreshStatus();
-                }
-            }
-
             textBox.initializeText(selectedShape);
         }
-
         else if(selectedShape instanceof COval cr){
             COval test = cr.clone();
-            if(!ctrl){
-                test.setX(test.getX() + dx);
-                test.setY(test.getY() + dy);
+            test.setPosition(e, panelSize);
+            if(shapeInBoarder(test)){
+                cr.setPosition(e, panelSize);
+                recalibrateWallMask();
+                refreshStatus();
+            }
+            textBox.initializeText(selectedShape);
+        }
+        else if(selectedRouter != null){
+            Router test = selectedRouter.clone();
+            test.setPosition(e, panelSize);
+            if(shapeInBoarder(test)){
+                selectedRouter.setPosition(e, panelSize);
+            }
+            textBox.initializeText(selectedRouter);
+        }
+    }
+
+    private void keyboardMoveOrResize(int dx, int dy, boolean ctrl) {
+        if(selectedShape instanceof CRect cr){
+            CRect test = cr.clone();
+            if(ctrl){
+                if(dx != 0){test.setWidth(Math.max(1, cr.getWidth() + dx));}
+                if(dy != 0){test.setHeight(Math.max(1, cr.getHeight() + dy));}
                 if(shapeInBoarder(test)){
-                    cr.setX(test.getX());
-                    cr.setY(test.getY());
+                    if(dx != 0){cr.setWidth(test.getWidth());}
+                    if(dy != 0){cr.setHeight(test.getHeight());}
                     recalibrateWallMask();
                     refreshStatus();
                 }
             }
             else{
-                if(dx != 0){
-                    test.setWidth(Math.max(1, cr.getWidth() + dx));
-                }
-                if(dy != 0){
-                    test.setHeight(Math.max(1, cr.getHeight() + dy));
-                }
+                test.setPosition(test.getX() + dx, test.getY() + dy);
                 if(shapeInBoarder(test)){
-                    if(dx != 0){
-                        cr.setWidth(test.getWidth());
-                    }
-                    if(dy != 0){
-                        cr.setHeight(test.getHeight());
-                    }
+                    cr.setPosition(test.getX(), test.getY());
+                    recalibrateWallMask();
+                    refreshStatus();
+                }
+            }
+        }
+        else if(selectedShape instanceof COval cr){
+            COval test = cr.clone();
+            if(ctrl){
+                if(dx != 0){test.setWidth(Math.max(1, cr.getWidth() + dx));}
+                if(dy != 0){test.setHeight(Math.max(1, cr.getHeight() + dy));}
+                if(shapeInBoarder(test)){
+                    if(dx != 0){cr.setWidth(test.getWidth());}
+                    if(dy != 0){cr.setHeight(test.getHeight());}
+                    recalibrateWallMask();
+                    refreshStatus();
+                }
+            }
+            else{
+                test.setPosition(test.getX() + dx, test.getY() + dy);
+                if(shapeInBoarder(test)){
+                    cr.setPosition(test.getX(), test.getY());
                     recalibrateWallMask();
                     refreshStatus();
                 }
             }
             textBox.initializeText(selectedShape);
         }
-
         else if(selectedRouter != null){
-            if(!ctrl){
-                Router test = selectedRouter.clone();
-                test.setX(selectedRouter.getX() + dx);
-                test.setY(selectedRouter.getY() + dy);
-
-                if(shapeInBoarder(test)){
-                    selectedRouter.setX(test.getX());
-                    selectedRouter.setY(test.getY());
-                    refreshStatus();
-                }
+            if(ctrl){
+                if(dx != 0){selectedRouter.setInitialDBM(selectedRouter.getInitialDBM() + dx);}
+                if(dy != 0){selectedRouter.setWallLoss(selectedRouter.getWallLoss() + dy);}
+                refreshStatus();
             }
             else{
-                if(dx != 0){
-                    selectedRouter.setInitialDBM(
-                            selectedRouter.getInitialDBM() + dx
-                    );
+                Router test = selectedRouter.clone();
+                test.setPosition(selectedRouter.getX() + dx, selectedRouter.getY() + dy);
+                if(shapeInBoarder(test)){
+                    selectedRouter.setPosition(test.getX(), test.getY());
+                    refreshStatus();
                 }
-                if(dy != 0){
-                    selectedRouter.setWallLoss(
-                            selectedRouter.getWallLoss() + dy
-                    );
-                }
-                refreshStatus();
             }
             textBox.initializeText(selectedRouter);
         }
@@ -646,6 +648,20 @@ public class Display extends AnimatablePanel {
                 selectShape(e);
                 selectRouter(e);
             }
+        }
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        if(selectedShape != null || selectedRouter != null){
+            mouseMoveOrResize(e);
+        }
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        if(selectedRouter != null){
+            refreshStatus();
         }
     }
 

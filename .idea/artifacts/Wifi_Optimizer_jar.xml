@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Wifi Optimizer:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Wifi_Optimizer_jar</output-path>
+    <root id="archive" name="Java-Project-Template.jar">
+      <element id="module-output" name="Java-Project-Template" />
+    </root>
+  </artifact>
+</component>
