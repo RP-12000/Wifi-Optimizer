@@ -35,7 +35,7 @@ public class Display extends AnimatablePanel {
 
     public static final ArrayList<CShape> shapes = new ArrayList<>();
     public static final boolean[][] wallMask = new boolean[BORDER_SIZE][BORDER_SIZE];
-    private final ArrayList<Router> routers = new ArrayList<>();
+    public static final ArrayList<Router> routers = new ArrayList<>();
     public static CShape selectedShape = null;
     public static Router selectedRouter = null;
 
@@ -49,7 +49,7 @@ public class Display extends AnimatablePanel {
     private boolean inOptimizationProgress = false;
     private boolean mouseInBorder = false;
 
-    private final BoundedString fileNameDisplay = new BoundedString("");
+    private static final BoundedString fileNameDisplay = new BoundedString("");
 
     private void bindNumbers(int num){
         addKeyBinding(0x30 + num, new AbstractAction() {
@@ -149,6 +149,50 @@ public class Display extends AnimatablePanel {
         } catch (IOException _) {}
     }
 
+    private void load(File f) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.trim().split("\\s+");
+                if (parts.length == 1) {
+                    AIR_LOSS_PER_UNIT = Double.parseDouble(parts[0]);
+                    break;
+                }
+                else if(parts.length == 5){
+                    int type = Integer.parseInt(parts[0]);
+                    double a = Double.parseDouble(parts[1]);
+                    double b = Double.parseDouble(parts[2]);
+                    double c = Double.parseDouble(parts[3]);
+                    double d = Double.parseDouble(parts[4]);
+                    switch (type) {
+                        case 1 -> {
+                            CRect r = new CRect(a, b, c, d);
+                            r.setFillColor(colorPlaced);
+                            shapes.add(r);
+                        }
+                        case 2 -> {
+                            COval o = new COval(a, b, c, d);
+                            o.setFillColor(colorPlaced);
+                            shapes.add(o);
+                        }
+                        case 3 -> {
+                            Router r = new Router();
+                            r.setPosition(a, b);
+                            r.setInitialDBM(c);
+                            r.setWallLoss(d);
+                            r.setFillColor(routerPlacedColor);
+                            r.recalibrateSignalStrength();
+                            routers.add(r);
+                        }
+                    }
+                }
+            }
+        }
+        recalibrateWallMask();
+        refreshStatus();
+        isSaved = true;
+    }
+
     private void load() {
         try {
             Path layoutDir = Paths.get("Layouts");
@@ -166,48 +210,7 @@ public class Display extends AnimatablePanel {
             }
             File file = chooser.getSelectedFile();
             clearShape();
-
-            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] parts = line.trim().split("\\s+");
-                    if (parts.length == 1) {
-                        AIR_LOSS_PER_UNIT = Double.parseDouble(parts[0]);
-                        break;
-                    }
-                    else if(parts.length == 5){
-                        int type = Integer.parseInt(parts[0]);
-                        double a = Double.parseDouble(parts[1]);
-                        double b = Double.parseDouble(parts[2]);
-                        double c = Double.parseDouble(parts[3]);
-                        double d = Double.parseDouble(parts[4]);
-                        switch (type) {
-                            case 1 -> {
-                                CRect r = new CRect(a, b, c, d);
-                                r.setFillColor(colorPlaced);
-                                shapes.add(r);
-                            }
-                            case 2 -> {
-                                COval o = new COval(a, b, c, d);
-                                o.setFillColor(colorPlaced);
-                                shapes.add(o);
-                            }
-                            case 3 -> {
-                                Router r = new Router();
-                                r.setPosition(a, b);
-                                r.setInitialDBM(c);
-                                r.setWallLoss(d);
-                                r.setFillColor(routerPlacedColor);
-                                r.recalibrateSignalStrength();
-                                routers.add(r);
-                            }
-                        }
-                    }
-                }
-            }
-            recalibrateWallMask();
-            refreshStatus();
-            isSaved = true;
+            load(file);
             fileNameDisplay.setString(file.getName().replace(".layout", ""));
         } catch (Exception _) {}
     }
@@ -228,10 +231,10 @@ public class Display extends AnimatablePanel {
         isSaved = false;
     }
 
-    private String generateRandomLayoutName(){
+    private void generateRandomFileName(){
         Random random = new Random();
         long number = Math.abs(random.nextLong()) % 1_000_000_0000L;
-        return "Untitled_Design_"+String.format("%010d", number);
+        fileNameDisplay.setString("Untitled_Design_"+String.format("%010d", number));
     }
 
     /**
@@ -310,7 +313,7 @@ public class Display extends AnimatablePanel {
             public void actionPerformed(ActionEvent e) {
                 save();
                 clearShape();
-                fileNameDisplay.setString(generateRandomLayoutName());
+                generateRandomFileName();
             }
         });
         addKeyBinding(KeyEvent.VK_LEFT, new AbstractAction() {
@@ -362,15 +365,17 @@ public class Display extends AnimatablePanel {
                 keyboardMoveOrResize(0, 1, true);
             }
         });
-        fileNameDisplay.setBounds(new CRect(105, 50, 180, 60));
-        fileNameDisplay.getBounds().setFillColor(Color.WHITE);
-        fileNameDisplay.setStringColor(Color.BLACK);
-        fileNameDisplay.setMaxStringSize(20);
-        fileNameDisplay.setStyle(Font.BOLD);
-        fileNameDisplay.setString(generateRandomLayoutName());
-        for(int i=0; i<signalStrength.length; i++){
-            for(int j=0; j<signalStrength[0].length; j++){
-                signalStrength[i][j] = Double.NEGATIVE_INFINITY;
+        if(fileNameDisplay.getString().isEmpty()){
+            fileNameDisplay.setBounds(new CRect(105, 50, 180, 60));
+            fileNameDisplay.getBounds().setFillColor(Color.WHITE);
+            fileNameDisplay.setStringColor(Color.BLACK);
+            fileNameDisplay.setMaxStringSize(20);
+            fileNameDisplay.setStyle(Font.BOLD);
+            generateRandomFileName();
+            for(int i=0; i<signalStrength.length; i++){
+                for(int j=0; j<signalStrength[0].length; j++){
+                    signalStrength[i][j] = Double.NEGATIVE_INFINITY;
+                }
             }
         }
     }
@@ -471,6 +476,7 @@ public class Display extends AnimatablePanel {
     @Override
     public void scale(Dimension d){
         buttons.scale(d);
+        textBox.scale(d);
     }
 
     private void selectButton(Object button, boolean hasSelection){

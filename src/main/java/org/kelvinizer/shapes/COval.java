@@ -18,6 +18,10 @@ public class COval extends CShape {
 
     private Pair<Double, Double> origin;
 
+    private void updateOrigin(){
+        this.origin = new Pair<>(width / 2, height / 2);
+    }
+
     public COval(double x, double y, double width, double height) {
         this.x = x;
         this.y = y;
@@ -52,6 +56,7 @@ public class COval extends CShape {
 
     public void setHeight(double height) {
         this.height = height;
+        updateOrigin();
     }
 
     public double getWidth() {
@@ -60,6 +65,7 @@ public class COval extends CShape {
 
     public void setWidth(double width) {
         this.width = width;
+        updateOrigin();
     }
 
     public double getY() {

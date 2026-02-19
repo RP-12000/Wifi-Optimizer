@@ -31,6 +31,10 @@ public class CRect extends CShape {
     /** The origin point of the rectangle, represented as a pair of doubles (x, y). */
     private Pair<Double, Double> origin;
 
+    private void updateOrigin(){
+        this.origin = new Pair<>(width / 2, height / 2);
+    }
+
     /**
      * Constructs a rectangle with the specified position and size.
      *
@@ -44,7 +48,7 @@ public class CRect extends CShape {
         this.y = y;
         this.width = width;
         this.height = height;
-        this.origin = new Pair<>(width / 2, height / 2);
+        updateOrigin();
     }
 
     /**
@@ -108,6 +112,7 @@ public class CRect extends CShape {
      */
     public void setHeight(double height) {
         this.height = height;
+        updateOrigin();
     }
 
     /**
@@ -126,6 +131,7 @@ public class CRect extends CShape {
      */
     public void setWidth(double width) {
         this.width = width;
+        updateOrigin();
     }
 
     /**

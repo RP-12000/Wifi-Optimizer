@@ -46,6 +46,11 @@ public class SettingsPage extends AnimatablePanel {
     }
 
     @Override
+    public void scale(Dimension d){
+        buttons.scale(d);
+    }
+
+    @Override
     public void mouseMoved(MouseEvent e){
         buttons.setFocused(e);
     }
@@ -62,6 +67,7 @@ public class SettingsPage extends AnimatablePanel {
 
     @Override
     public void toNextPanel(){
+        buttons.air.select(false);
         GeneralParams.panelIndex = 0;
     }
 }

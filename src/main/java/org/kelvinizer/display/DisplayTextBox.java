@@ -133,11 +133,11 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
     private String getUpdatedString(CRectTextBox b, char c) {
         String s = b.getEntry().getString();
         if (c == '\b') {
-            if (s.length() > 1) {
-                s = s.substring(0, s.length() - 1);
+            if(s.equals("-0") || s.equals("0")){
+                s = "0";
             }
             else{
-                s = "0";
+                s = s.substring(0, s.length() - 1);
             }
         }
         else if(c == '.'){
