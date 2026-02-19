@@ -21,6 +21,7 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
     public final CRectButton duplicate = new CRectButton();
     public final CRectButton load = new CRectButton();
     public final CRectButton clear = new CRectButton();
+    public final CRectButton settings = new CRectButton();
 
     private void setShapeButton(CRectButton button, String label, int x) {
         BoundedString normal = new BoundedString("", 20);
@@ -54,14 +55,15 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
 
     public DisplayButtons() {
         setShapeButton(rectangle, "rectangle", 240);
-        setShapeButton(oval, "oval", 340);
-        setShapeButton(router, "router", 440);
-        setShapeButton(save, "save", 540);
-        setShapeButton(delete, "delete", 640);
-        setShapeButton(duplicate, "duplicate", 740);
-        setShapeButton(load, "load", 840);
-        setShapeButton(clear, "clear", 940);
-        setShapeButton(optimize, "optimize", 1040);
+        setShapeButton(oval, "oval", 325);
+        setShapeButton(router, "router", 410);
+        setShapeButton(save, "save", 495);
+        setShapeButton(delete, "delete", 580);
+        setShapeButton(duplicate, "duplicate", 665);
+        setShapeButton(load, "load", 750);
+        setShapeButton(clear, "clear", 835);
+        setShapeButton(optimize, "optimize", 920);
+        setShapeButton(settings, "settings", 1005);
     }
 
     /**
@@ -81,6 +83,7 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
         duplicate.render(g2d);
         load.render(g2d);
         clear.render(g2d);
+        settings.render(g2d);
     }
 
     /**
@@ -100,6 +103,7 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
         duplicate.setFocused(e);
         load.setFocused(e);
         clear.setFocused(e);
+        settings.setFocused(e);
     }
 
     /**
@@ -119,5 +123,6 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
         duplicate.scale(d);
         load.scale(d);
         clear.scale(d);
+        settings.scale(d);
     }
 }

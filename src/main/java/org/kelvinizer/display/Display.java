@@ -142,6 +142,8 @@ public class Display extends AnimatablePanel {
                             r.getInitialDBM(), r.getWallLoss()));
                     writer.newLine();
                 }
+
+                writer.write(Double.toString(AIR_LOSS_PER_UNIT));
             }
             isSaved = true;
         } catch (IOException _) {}
@@ -169,31 +171,36 @@ public class Display extends AnimatablePanel {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     String[] parts = line.trim().split("\\s+");
-                    if (parts.length != 5) continue;
-                    int type = Integer.parseInt(parts[0]);
-                    double a = Double.parseDouble(parts[1]);
-                    double b = Double.parseDouble(parts[2]);
-                    double c = Double.parseDouble(parts[3]);
-                    double d = Double.parseDouble(parts[4]);
-                    switch (type) {
-                        case 1 -> {
-                            CRect r = new CRect(a, b, c, d);
-                            r.setFillColor(colorPlaced);
-                            shapes.add(r);
-                        }
-                        case 2 -> {
-                            COval o = new COval(a, b, c, d);
-                            o.setFillColor(colorPlaced);
-                            shapes.add(o);
-                        }
-                        case 3 -> {
-                            Router r = new Router();
-                            r.setPosition(a, b);
-                            r.setInitialDBM(c);
-                            r.setWallLoss(d);
-                            r.setFillColor(routerPlacedColor);
-                            r.recalibrateSignalStrength();
-                            routers.add(r);
+                    if (parts.length == 1) {
+                        AIR_LOSS_PER_UNIT = Double.parseDouble(parts[0]);
+                        break;
+                    }
+                    else if(parts.length == 5){
+                        int type = Integer.parseInt(parts[0]);
+                        double a = Double.parseDouble(parts[1]);
+                        double b = Double.parseDouble(parts[2]);
+                        double c = Double.parseDouble(parts[3]);
+                        double d = Double.parseDouble(parts[4]);
+                        switch (type) {
+                            case 1 -> {
+                                CRect r = new CRect(a, b, c, d);
+                                r.setFillColor(colorPlaced);
+                                shapes.add(r);
+                            }
+                            case 2 -> {
+                                COval o = new COval(a, b, c, d);
+                                o.setFillColor(colorPlaced);
+                                shapes.add(o);
+                            }
+                            case 3 -> {
+                                Router r = new Router();
+                                r.setPosition(a, b);
+                                r.setInitialDBM(c);
+                                r.setWallLoss(d);
+                                r.setFillColor(routerPlacedColor);
+                                r.recalibrateSignalStrength();
+                                routers.add(r);
+                            }
                         }
                     }
                 }
@@ -213,11 +220,11 @@ public class Display extends AnimatablePanel {
         currentShape = null;
         currentRouter = null;
         recalibrateWallMask();
-        changed = true;
+        layoutChanged = true;
     }
 
     public static void refreshStatus(){
-        changed = true;
+        layoutChanged = true;
         isSaved = false;
     }
 
@@ -231,7 +238,7 @@ public class Display extends AnimatablePanel {
      * Creates an {@code AnimatablePanel} with a specified start duration for the appearance animation.
      */
     public Display() {
-        super(500, REF_WIN_W, GeneralParams.REF_WIN_H);
+        super(1000, REF_WIN_W, GeneralParams.REF_WIN_H);
         boundaries.setFillColor(BORDER_COLOR);
         signalMap = new BufferedImage(
                 BORDER_SIZE,BORDER_SIZE,
@@ -518,6 +525,7 @@ public class Display extends AnimatablePanel {
         selectButton(buttons.load, false);
         selectButton(buttons.save, false);
         selectButton(buttons.optimize, false);
+        selectButton(buttons.settings, false);
     }
 
     private void selectShape(MouseEvent e){
@@ -625,6 +633,9 @@ public class Display extends AnimatablePanel {
             }
             else if(buttons.load.isFocused()){
                 load();
+            }
+            else if(buttons.settings.isFocused()){
+                exit(1000);
             }
         }
         else{
@@ -797,7 +808,7 @@ public class Display extends AnimatablePanel {
         routers.add(selectedRouter);
         selectedRouter.setFillColor(colorPlaced);
         selectedRouter = null;
-        changed = true;
+        layoutChanged = true;
         inOptimizationProgress = false;
     }
 
@@ -838,11 +849,15 @@ public class Display extends AnimatablePanel {
             textBox.renderRouter(g2d);
         }
         boundaries.render(g2d);
-
-        if (changed) {
+        if(environmentChanged){
             recalibrateSignalStrength();
             calculateSignalStrength();
-            changed = false;
+            environmentChanged = false;
+        }
+        if (layoutChanged) {
+            recalibrateSignalStrength();
+            calculateSignalStrength();
+            layoutChanged = false;
         }
         if (!routers.isEmpty() && !inOptimizationProgress) {
             renderSignalStrength(g2d);
@@ -863,5 +878,10 @@ public class Display extends AnimatablePanel {
         if(mouseInBorder){
             mouseText.render(g2d);
         }
+    }
+
+    @Override
+    public void toNextPanel(){
+        GeneralParams.panelIndex=1;
     }
 }

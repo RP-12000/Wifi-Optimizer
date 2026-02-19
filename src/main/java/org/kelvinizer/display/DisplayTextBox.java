@@ -130,7 +130,7 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
         });
     }
 
-    private static String getUpdatedString(CRectTextBox b, char c) {
+    private String getUpdatedString(CRectTextBox b, char c) {
         String s = b.getEntry().getString();
         if (c == '\b') {
             if (s.length() > 1) {

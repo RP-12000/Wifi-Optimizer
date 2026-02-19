@@ -23,6 +23,8 @@ public class GeneralParams {
 
     public static int extraHeight = 35;
 
+    public static int panelIndex = 0;
+
     /**
      * Initializes the parameters with the specified values.
      *
