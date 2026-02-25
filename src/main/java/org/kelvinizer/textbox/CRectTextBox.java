@@ -10,33 +10,57 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 
 public class CRectTextBox implements Drawable, Scalable, Focusable {
+    private String entry;
     private CRectButton selector;
-    private BoundedString entry;
     private TextUpdateHandler handler;
+
+    public void setEntry(String entry) {
+        this.entry = entry;
+        refreshText();
+    }
+
+    public String getEntry() {
+        return entry;
+    }
+
+    private void refreshText(){
+        if(selector.getNormal()!=null){
+            selector.getNormal().setString(entry);
+        }
+        if(selector.getOnFocus()!=null){
+            selector.getOnFocus().setString(entry);
+        }
+        if(selector.getOnSelection()!=null){
+            selector.getOnSelection().setString(entry);
+        }
+    }
 
     /**
      * Constructs a new {@code CRectTextBox}.
      */
-    public CRectTextBox(CRectButton selector, BoundedString entry, TextUpdateHandler handler) {
+    public CRectTextBox(CRectButton selector, String entry, TextUpdateHandler handler) {
         this.selector = selector;
         this.entry = entry;
+        refreshText();
         this.handler = handler;
     }
 
     public CRectTextBox(TextUpdateHandler handler) {
-        this(new CRectButton(), new BoundedString(), handler);
+        this(new CRectButton(), "", handler);
     }
 
     public CRectTextBox() {
-        this((box, c) -> box.entry.setString(box.entry.getString() + c));
+        this(new TextUpdateHandler() {
+            @Override
+            public void update(CRectTextBox box, char c) {
+                box.entry+=c;
+                box.refreshText();
+            }
+        });
     }
 
     public void setSelector(CRectButton selector) {
         this.selector = selector;
-    }
-
-    public void setEntry(BoundedString entry) {
-        this.entry = entry;
     }
 
     public void setTextUpdateHandler(TextUpdateHandler handler) {
@@ -45,7 +69,13 @@ public class CRectTextBox implements Drawable, Scalable, Focusable {
 
     public void updateText(char c) {
         if(handler == null) {
-            handler = (box, c1) -> box.entry.setString(box.entry.getString() + c1);
+            handler = new TextUpdateHandler() {
+                @Override
+                public void update(CRectTextBox box, char c) {
+                    box.entry+=c;
+                    box.refreshText();
+                }
+            };
         }
         handler.update(this, c);
     }
@@ -58,7 +88,6 @@ public class CRectTextBox implements Drawable, Scalable, Focusable {
     @Override
     public void render(Graphics2D g2d) {
         selector.render(g2d);
-        entry.render(g2d);
     }
 
     /**
@@ -95,9 +124,5 @@ public class CRectTextBox implements Drawable, Scalable, Focusable {
     @Override
     public void scale(Dimension d) {
         selector.scale(d);
-    }
-
-    public BoundedString getEntry() {
-        return entry;
     }
 }

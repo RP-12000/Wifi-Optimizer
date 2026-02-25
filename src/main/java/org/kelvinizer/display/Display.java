@@ -30,6 +30,7 @@ import static org.kelvinizer.params.ObjectDimensionParams.*;
 public class Display extends AnimatablePanel {
     private final DisplayButtons buttons = new DisplayButtons();
     private final DisplayTextBox textBox = new DisplayTextBox();
+    private final Separators sep = new Separators();
     private final MouseText mouseText = new MouseText();
     private boolean isButtonSelected = false;
 
@@ -47,7 +48,6 @@ public class Display extends AnimatablePanel {
     private Router currentRouter = null;
     private boolean initPlacement = false;
     private boolean inOptimizationProgress = false;
-    private boolean mouseInBorder = false;
 
     private static final BoundedString fileNameDisplay = new BoundedString("");
 
@@ -366,7 +366,7 @@ public class Display extends AnimatablePanel {
             }
         });
         if(fileNameDisplay.getString().isEmpty()){
-            fileNameDisplay.setBounds(new CRect(105, 50, 180, 60));
+            fileNameDisplay.setBounds(new CRect(100, 45, 180, 60));
             fileNameDisplay.getBounds().setFillColor(Color.WHITE);
             fileNameDisplay.setStringColor(Color.BLACK);
             fileNameDisplay.setMaxStringSize(20);
@@ -409,6 +409,7 @@ public class Display extends AnimatablePanel {
             }
             textBox.initializeText(selectedRouter);
         }
+
     }
 
     private void keyboardMoveOrResize(int dx, int dy, boolean ctrl) {
@@ -432,6 +433,7 @@ public class Display extends AnimatablePanel {
                     refreshStatus();
                 }
             }
+            textBox.initializeText(selectedShape);
         }
         else if(selectedShape instanceof COval cr){
             COval test = cr.clone();
@@ -526,7 +528,7 @@ public class Display extends AnimatablePanel {
         }
 
         selectButton(buttons.delete, false);
-        selectButton(buttons.clear, false);
+        selectButton(buttons.NEW, false);
         selectButton(buttons.duplicate, false);
         selectButton(buttons.load, false);
         selectButton(buttons.save, false);
@@ -588,10 +590,29 @@ public class Display extends AnimatablePanel {
         }
         if(boundaries.contains(e.getPoint(), panelSize)){
             mouseText.updateStatus(e.getPoint(), panelSize);
-            mouseInBorder = true;
         }
         else{
-            mouseInBorder = false;
+            mouseText.clearStatus();
+        }
+        if(selectedShape != null){
+            textBox.initializeText(selectedShape);
+        }
+        else if(selectedRouter != null){
+            textBox.initializeText(selectedRouter);
+        }
+        else{
+            textBox.clearText();
+        }
+    }
+
+    private void clearSelectedObject(){
+        if(selectedShape != null){
+            selectedShape.setFillColor(colorPlaced);
+            selectedShape = null;
+        }
+        if(selectedRouter != null){
+            selectedRouter.setFillColor(routerPlacedColor);
+            selectedRouter = null;
         }
     }
 
@@ -607,17 +628,20 @@ public class Display extends AnimatablePanel {
                 currentRouter.setFillColor(routerSelectedColor);
                 currentRouter = null;
             }
-            if(buttons.rectangle.isFocused()){
+            if(buttons.rectangle.isFocused() && buttons.rectangle.isSelected()){
+                clearSelectedObject();
                 currentShape = new CRect(e.getX(), e.getY(), 50, 50);
                 currentShape.setFillColor(colorNotPlaced);
                 initPlacement = true;
             }
-            else if(buttons.oval.isFocused()){
+            else if(buttons.oval.isFocused() && buttons.oval.isSelected()){
+                clearSelectedObject();
                 currentShape = new COval(e.getX(), e.getY(), INITIAL_WIDTH, INITIAL_HEIGHT);
                 currentShape.setFillColor(colorNotPlaced);
                 initPlacement = true;
             }
             else if(buttons.router.isFocused()) {
+                clearSelectedObject();
                 currentRouter = new Router();
                 currentRouter.setFillColor(routerNotPlacedColor);
                 initPlacement = true;
@@ -625,8 +649,10 @@ public class Display extends AnimatablePanel {
             else if(buttons.delete.isFocused()){
                 deleteThing();
             }
-            else if(buttons.clear.isFocused()){
+            else if(buttons.NEW.isFocused()){
+                save();
                 clearShape();
+                generateRandomFileName();
             }
             else if(buttons.duplicate.isFocused()){
                 duplicateThing();
@@ -643,10 +669,13 @@ public class Display extends AnimatablePanel {
             else if(buttons.settings.isFocused()){
                 exit(1000);
             }
+
         }
         else{
             if(initPlacement && shapeInBoarder(currentShape)){
-                currentShape.setFillColor(colorPlaced);
+                currentShape.setFillColor(colorSelected);
+                selectedShape = currentShape;
+                textBox.initializeText(selectedShape);
                 shapes.add(currentShape);
                 currentShape = null;
                 initPlacement = false;
@@ -654,8 +683,10 @@ public class Display extends AnimatablePanel {
                 refreshStatus();
             }
             else if(initPlacement && shapeInBoarder(currentRouter)){
-                currentRouter.setFillColor(routerPlacedColor);
+                currentRouter.setFillColor(routerSelectedColor);
                 currentRouter.recalibrateSignalStrength();
+                selectedRouter = currentRouter;
+                textBox.initializeText(selectedRouter);
                 routers.add(currentRouter);
                 currentRouter = null;
                 initPlacement = false;
@@ -739,11 +770,11 @@ public class Display extends AnimatablePanel {
         }
     }
 
-    private int calculateScore(Router r){
-        int score = 0;
+    private double calculateScore(Router r){
+        double score = 0;
         for(int i = 0; i < BORDER_SIZE; i++){
             for(int j = 0; j < BORDER_SIZE; j++){
-                score += (int) (Math.max(expCombine(signalStrength[i][j], r.signal[i][j]) - Router.MINIMUM_SIGNAL, 0));
+                score += expCombine(signalStrength[i][j], r.signal[i][j]);
             }
         }
         return score;
@@ -763,7 +794,7 @@ public class Display extends AnimatablePanel {
         int dx = width / Router.CHUNK_SIZE;
         int dy = height / Router.CHUNK_SIZE;
 
-        int bestScore = -1;
+        double bestScore = -1;
         Point bestCenter = null;
         Point bestUpper = null;
         Point bestLower = null;
@@ -782,7 +813,7 @@ public class Display extends AnimatablePanel {
 
                 selectedRouter.recalibrateSignalStrength(cx, cy);
 
-                int score = calculateScore(selectedRouter);
+                double score = calculateScore(selectedRouter);
 
                 if(bestCenter == null ||
                         score > bestScore ||
@@ -847,11 +878,9 @@ public class Display extends AnimatablePanel {
         }
         fileNameDisplay.render(g2d);
         if(selectedShape != null){
-            textBox.render(g2d);
             textBox.renderShape(g2d);
         }
         else if(selectedRouter != null){
-            textBox.render(g2d);
             textBox.renderRouter(g2d);
         }
         boundaries.render(g2d);
@@ -881,9 +910,15 @@ public class Display extends AnimatablePanel {
         for (Router r : routers) {
             r.render(g2d);
         }
-        if(mouseInBorder){
-            mouseText.render(g2d);
+        mouseText.render(g2d);
+        textBox.render(g2d);
+        if(selectedShape != null){
+            textBox.renderShape(g2d);
         }
+        else{
+            textBox.renderRouter(g2d);
+        }
+        sep.render(g2d);
     }
 
     @Override

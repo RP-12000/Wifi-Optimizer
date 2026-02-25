@@ -5,7 +5,6 @@ import org.kelvinizer.misc.interfaces.Drawable;
 import org.kelvinizer.misc.interfaces.Focusable;
 import org.kelvinizer.misc.interfaces.Scalable;
 import org.kelvinizer.misc.objects.BoundedString;
-import org.kelvinizer.params.BorderParams;
 import org.kelvinizer.shapes.COval;
 import org.kelvinizer.shapes.CRect;
 import org.kelvinizer.shapes.CShape;
@@ -24,47 +23,52 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
     public final CRectTextBox initial = new CRectTextBox();
     public final CRectTextBox decrease = new CRectTextBox();
 
+    private final BoundedString posXVerdict = new BoundedString("X", 30);
+    private final BoundedString posYVerdict = new BoundedString("Y", 30);
+    private final BoundedString widthVerdict = new BoundedString("Width", 30);
+    private final BoundedString heightVerdict = new BoundedString("Height", 30);
+    private final BoundedString initialVerdict = new BoundedString("", 20);
+    private final BoundedString decreaseVerdict = new BoundedString("", 20);
+
+    private final BoundedString borders = new BoundedString("Object Info", 30);
+
     int selection_status = 0;
 
-    private void setTextBoxSelector(CRectTextBox c, String text, int y) {
+    private void setTextBoxSelector(CRectTextBox c, BoundedString b, int y) {
         CRectButton button = new CRectButton();
 
-        BoundedString normal = new BoundedString(text, 20);
-        normal.setBounds(new CRect(100, y, 100, 100));
+        BoundedString normal = new BoundedString("", 20);
+        normal.setBounds(new CRect(320, y, 180, 50));
         normal.getBounds().setOutlineColor(Color.WHITE);
         normal.getBounds().setOutlineThickness(3.0);
-        normal.setStyle(Font.PLAIN);
         button.setNormal(normal);
 
-        BoundedString onFocus = new BoundedString(text, 20);
-        onFocus.setBounds(new CRect(100, y, 100, 100));
-        onFocus.getBounds().setOutlineColor(Color.YELLOW);
+        BoundedString onFocus = new BoundedString("", 20);
+        onFocus.setBounds(new CRect(320, y, 185, 55));
+        onFocus.getBounds().setOutlineColor(Color.WHITE);
         onFocus.getBounds().setOutlineThickness(3.0);
-        onFocus.setStyle(Font.BOLD);
         button.setOnFocus(onFocus);
 
-        BoundedString onSelection = new BoundedString(text, 20);
-        onSelection.setBounds(new CRect(100, y, 100, 100));
-        onSelection.getBounds().setOutlineColor(Color.RED);
+        BoundedString onSelection = new BoundedString("", 20);
+        onSelection.setBounds(new CRect(320, y, 180, 50));
+        onSelection.getBounds().setOutlineColor(Color.YELLOW);
         onSelection.getBounds().setOutlineThickness(3.0);
-        onSelection.setStyle(Font.BOLD);
         button.setOnSelection(onSelection);
 
         c.setSelector(button);
+
+        b.setBounds(new CRect(120, y, 180, 50));
+        b.getBounds().setOutlineColor(Color.WHITE);
+        b.getBounds().setOutlineThickness(3.0);
+        b.setStyle(Font.BOLD);
     }
 
-    private void setTextBox(CRectTextBox C, String text, int y) {
+    private void setTextBox(CRectTextBox C, BoundedString text, int y) {
         setTextBoxSelector(C, text, y);
-        BoundedString entry = new BoundedString("", 50);
-        entry.setStyle(Font.PLAIN);
-        entry.setBounds(new CRect(260, y, 200, 100));
-        entry.getBounds().setOutlineColor(Color.WHITE);
-        entry.getBounds().setOutlineThickness(2.0);
-        entry.setString("0");
-        C.setEntry(entry);
+        C.setEntry("0");
         C.setTextUpdateHandler((b, c) -> {
             String s = getUpdatedString(b, c);
-            b.getEntry().setString(s);
+            b.setEntry(s);
             if(Display.selectedShape instanceof CRect cr){
                 CRect cr2 = cr.clone();
                 switch (selection_status){
@@ -74,7 +78,7 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
                     case 4 -> cr2.setHeight(Double.parseDouble(s));
                     default -> {}
                 }
-                if(BorderParams.shapeInBoarder(cr2)){
+                if(shapeInBoarder(cr2)){
                     switch (selection_status){
                         case 1 -> cr.setX(Double.parseDouble(s) + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
                         case 2 -> cr.setY(Double.parseDouble(s) + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
@@ -95,7 +99,7 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
                     case 4 -> cr2.setHeight(Double.parseDouble(s));
                     default -> {}
                 }
-                if(BorderParams.shapeInBoarder(cr2)){
+                if(shapeInBoarder(cr2)){
                     switch (selection_status){
                         case 1 -> cr.setX(Double.parseDouble(s) + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
                         case 2 -> cr.setY(Double.parseDouble(s) + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
@@ -116,7 +120,7 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
                     case 4 -> sr.setWallLoss(Double.parseDouble(s));
                     default -> {}
                 }
-                if(BorderParams.shapeInBoarder(sr)){
+                if(shapeInBoarder(sr)){
                     switch (selection_status){
                         case 1 -> Display.selectedRouter.setX(Double.parseDouble(s) + BORDER_CENTER_X - (double) BORDER_SIZE / 2);
                         case 2 -> Display.selectedRouter.setY(Double.parseDouble(s) + BORDER_CENTER_Y - (double) BORDER_SIZE / 2);
@@ -131,9 +135,9 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
     }
 
     private String getUpdatedString(CRectTextBox b, char c) {
-        String s = b.getEntry().getString();
+        String s = b.getEntry();
         if (c == '\b') {
-            if(s.equals("-0") || s.equals("0")){
+            if(s.equals("-0") || s.length() == 1){
                 s = "0";
             }
             else{
@@ -163,13 +167,19 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
     }
 
     public DisplayTextBox() {
-        setTextBox(posX, "X", 150);
-        setTextBox(posY, "Y", 317);
-        setTextBox(width, "Width", 483);
-        setTextBox(height, "Height", 650);
-        setTextBox(initial, "Initial", 483);
-        setTextBox(decrease, "D.R.", 650);
+        setTextBox(posX, posXVerdict, 440);
+        setTextBox(posY, posYVerdict, 515);
+        setTextBox(width, widthVerdict, 590);
+        setTextBox(height, heightVerdict, 665);
+        setTextBox(initial, initialVerdict, 590);
+        setTextBox(decrease, decreaseVerdict, 665);
+        borders.setBounds(new CRect(220, 530, 400, 350));
+        borders.getBounds().setOutlineColor(Color.WHITE);
+        borders.getBounds().setOutlineThickness(3.0);
+        borders.setStyle(Font.BOLD);
+        borders.setRelativeY(0.08);
     }
+
     /**
      * Render the object that implements it.
      *
@@ -179,16 +189,23 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
     public void render(Graphics2D g2d) {
         posX.render(g2d);
         posY.render(g2d);
+        posXVerdict.render(g2d);
+        posYVerdict.render(g2d);
+        borders.render(g2d);
     }
 
     public void renderShape(Graphics2D g2d) {
         width.render(g2d);
         height.render(g2d);
+        widthVerdict.render(g2d);
+        heightVerdict.render(g2d);
     }
 
     public void renderRouter(Graphics2D g2d){
         initial.render(g2d);
         decrease.render(g2d);
+        initialVerdict.render(g2d);
+        decreaseVerdict.render(g2d);
     }
 
     /**
@@ -255,27 +272,40 @@ public class DisplayTextBox implements Scalable, Drawable, Focusable {
     }
 
     public void initializeText(CShape c){
-        if(c instanceof CRect cr){
-            posX.getEntry().setString(Integer.toString((int)(cr.getX()) - BORDER_CENTER_X + BORDER_SIZE / 2));
-            posY.getEntry().setString(Integer.toString((int)(cr.getY()) - BORDER_CENTER_Y + BORDER_SIZE / 2));
-            width.getEntry().setString(Integer.toString((int)(cr.getWidth())));
-            height.getEntry().setString(Integer.toString((int)(cr.getHeight())));
-        }
-        else if (c instanceof COval co) {
-            posX.getEntry().setString(Integer.toString((int)(co.getX()) - BORDER_CENTER_X + BORDER_SIZE / 2));
-            posY.getEntry().setString(Integer.toString((int)(co.getY()) - BORDER_CENTER_Y + BORDER_SIZE / 2));
-            width.getEntry().setString(Integer.toString((int)(co.getWidth())));
-            height.getEntry().setString(Integer.toString((int)(co.getHeight())));
-        }
-        else{
-            System.err.println("Bad shape");
+        switch (c) {
+            case CRect cr -> {
+                posX.setEntry(Integer.toString((int) (cr.getX()) - BORDER_CENTER_X + BORDER_SIZE / 2));
+                posY.setEntry(Integer.toString((int) (cr.getY()) - BORDER_CENTER_Y + BORDER_SIZE / 2));
+                width.setEntry(Integer.toString((int) (cr.getWidth())));
+                height.setEntry(Integer.toString((int) (cr.getHeight())));
+            }
+            case COval co -> {
+                posX.setEntry(Integer.toString((int) (co.getX()) - BORDER_CENTER_X + BORDER_SIZE / 2));
+                posY.setEntry(Integer.toString((int) (co.getY()) - BORDER_CENTER_Y + BORDER_SIZE / 2));
+                width.setEntry(Integer.toString((int) (co.getWidth())));
+                height.setEntry(Integer.toString((int) (co.getHeight())));
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + c);
         }
     }
 
     public void initializeText(Router r){
-        posX.getEntry().setString(Integer.toString((int)(r.getX()) - BORDER_CENTER_X + BORDER_SIZE / 2));
-        posY.getEntry().setString(Integer.toString((int)(r.getY()) - BORDER_CENTER_Y + BORDER_SIZE / 2));
-        initial.getEntry().setString(Double.toString((r.getInitialDBM())));
-        decrease.getEntry().setString(Double.toString(r.getWallLoss()));
+        posX.setEntry(Integer.toString((int)(r.getX()) - BORDER_CENTER_X + BORDER_SIZE / 2));
+        posY.setEntry(Integer.toString((int)(r.getY()) - BORDER_CENTER_Y + BORDER_SIZE / 2));
+        initialVerdict.setString("Initial Power");
+        initial.setEntry(Double.toString((r.getInitialDBM())));
+        decreaseVerdict.setString("Wall Loss Factor");
+        decrease.setEntry(Double.toString(r.getWallLoss()));
+    }
+
+    public void clearText(){
+        posX.setEntry("");
+        posY.setEntry("");
+        width.setEntry("");
+        height.setEntry("");
+        initial.setEntry("");
+        decrease.setEntry("");
+        initialVerdict.setString("");
+        decreaseVerdict.setString("");
     }
 }

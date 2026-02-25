@@ -15,28 +15,28 @@ import java.awt.event.MouseEvent;
 public class SettingsPageButtons implements Scalable, Drawable, Focusable {
     public final CRectButton back = new CRectButton();
     public final CRectTextBox air = new CRectTextBox();
+    public final BoundedString airVerdict = new BoundedString("Air Degeneration Coefficient", 50);
 
     private void setAirCRectTextBox(){
         CRectButton button = new CRectButton();
 
-        String text = "Air Degeneration Coefficient";
-        BoundedString normal = new BoundedString(text, 50);
-        normal.setBounds(new CRect(540, 200, 800, 100));
+        BoundedString normal = new BoundedString("", 50);
+        normal.setBounds(new CRect(540, 420, 800, 100));
         normal.getBounds().setOutlineColor(Color.WHITE);
         normal.getBounds().setOutlineThickness(3.0);
         normal.setStyle(Font.PLAIN);
         button.setNormal(normal);
 
-        BoundedString onFocus = new BoundedString(text, 50);
-        onFocus.setBounds(new CRect(540, 200, 800, 100));
-        onFocus.getBounds().setOutlineColor(Color.YELLOW);
+        BoundedString onFocus = new BoundedString("", 50);
+        onFocus.setBounds(new CRect(540, 420, 808, 101));
+        onFocus.getBounds().setOutlineColor(Color.WHITE);
         onFocus.getBounds().setOutlineThickness(3.0);
         onFocus.setStyle(Font.BOLD);
         button.setOnFocus(onFocus);
 
-        BoundedString onSelection = new BoundedString(text, 50);
-        onSelection.setBounds(new CRect(540, 200, 800, 100));
-        onSelection.getBounds().setOutlineColor(Color.RED);
+        BoundedString onSelection = new BoundedString("", 50);
+        onSelection.setBounds(new CRect(540, 420, 800, 100));
+        onSelection.getBounds().setOutlineColor(Color.YELLOW);
         onSelection.getBounds().setOutlineThickness(3.0);
         onSelection.setStyle(Font.BOLD);
         button.setOnSelection(onSelection);
@@ -44,13 +44,9 @@ public class SettingsPageButtons implements Scalable, Drawable, Focusable {
         air.setSelector(button);
         BoundedString entry = new BoundedString("", 50);
         entry.setStyle(Font.PLAIN);
-        entry.setBounds(new CRect(540, 400, 400, 100));
-        entry.getBounds().setOutlineColor(Color.WHITE);
-        entry.getBounds().setOutlineThickness(2.0);
-        entry.setString(Double.toString(BorderParams.AIR_LOSS_PER_UNIT));
-        air.setEntry(entry);
+        air.setEntry(Double.toString(BorderParams.AIR_LOSS_PER_UNIT));
         air.setTextUpdateHandler((box, c) -> {
-            String s = box.getEntry().getString();
+            String s = box.getEntry();
             if (c == '\b') {
                 if (s.length() > 1) {
                     s = s.substring(0, s.length() - 1);
@@ -70,7 +66,7 @@ public class SettingsPageButtons implements Scalable, Drawable, Focusable {
                 }
                 s+= c;
             }
-            box.getEntry().setString(s);
+            box.setEntry(s);
             BorderParams.AIR_LOSS_PER_UNIT = Double.parseDouble(s);
             BorderParams.environmentChanged = true;
         });
@@ -78,10 +74,10 @@ public class SettingsPageButtons implements Scalable, Drawable, Focusable {
 
     public SettingsPageButtons() {
         BoundedString normal = new BoundedString("", 20);
-        normal.setBounds(new CRect(100, 50, 60, 60));
+        normal.setBounds(new CRect(100, 50, 100, 100));
         normal.setStyle(Font.PLAIN);
         BoundedString onFocus = new BoundedString("", 20);
-        onFocus.setBounds(new CRect(100, 50, 63, 63));
+        onFocus.setBounds(new CRect(100, 55, 110, 110));
         onFocus.setStyle(Font.BOLD);
         if(!back.setIcon("back.png")){
             normal.setString("back");
@@ -89,6 +85,11 @@ public class SettingsPageButtons implements Scalable, Drawable, Focusable {
         }
         back.setNormal(normal);
         back.setOnFocus(onFocus);
+
+        airVerdict.setBounds(new CRect(540, 300, 800, 100));
+        airVerdict.getBounds().setOutlineColor(Color.WHITE);
+        airVerdict.getBounds().setOutlineThickness(3.0);
+
         setAirCRectTextBox();
     }
 
@@ -101,6 +102,7 @@ public class SettingsPageButtons implements Scalable, Drawable, Focusable {
     public void render(Graphics2D g2d) {
         back.render(g2d);
         air.render(g2d);
+        airVerdict.render(g2d);
     }
 
     /**

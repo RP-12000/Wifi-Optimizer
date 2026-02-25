@@ -17,7 +17,6 @@ public class Router extends COval {
     public final double[][] signal =
             new double[BORDER_SIZE][BORDER_SIZE];
 
-    public static final double MINIMUM_SIGNAL = -50;
     public static final int CHUNK_SIZE = 6;
 
     public Router(double x, double y, double txPowerDbm, double wallLossDb) {

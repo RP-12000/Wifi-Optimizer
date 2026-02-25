@@ -10,12 +10,12 @@ import java.awt.geom.Ellipse2D;
 public class BorderParams {
     public static int BORDER_SIZE = 600;
     public static Color BORDER_COLOR = Color.WHITE;
-    public static int BORDER_CENTER_X = 730;
+    public static int BORDER_CENTER_X = 760;
     public static int BORDER_CENTER_Y = 400;
 
     public static CRect boundaries = new CRect(BORDER_CENTER_X, BORDER_CENTER_Y, BORDER_SIZE, BORDER_SIZE);
 
-    public static int DUPLICATE_DIST = 20;
+    public static int DUPLICATE_DIST = 10;
     public static double AIR_LOSS_PER_UNIT = 0.08;
 
     public static boolean environmentChanged = false;

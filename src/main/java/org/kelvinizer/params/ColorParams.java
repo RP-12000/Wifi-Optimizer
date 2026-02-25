@@ -9,4 +9,5 @@ public class ColorParams {
     public static final Color routerNotPlacedColor = Color.PINK;
     public static final Color routerPlacedColor = Color.RED;
     public static final Color routerSelectedColor = Color.MAGENTA;
+    public static final Color seperatorColor = Color.WHITE;
 }

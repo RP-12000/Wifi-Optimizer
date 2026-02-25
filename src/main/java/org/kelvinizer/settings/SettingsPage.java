@@ -63,6 +63,9 @@ public class SettingsPage extends AnimatablePanel {
         else if(buttons.air.isFocused()){
             buttons.air.select();
         }
+        else{
+            buttons.air.select(false);
+        }
     }
 
     @Override

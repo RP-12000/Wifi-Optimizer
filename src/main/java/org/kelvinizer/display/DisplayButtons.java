@@ -20,24 +20,24 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
     public final CRectButton delete = new CRectButton();
     public final CRectButton duplicate = new CRectButton();
     public final CRectButton load = new CRectButton();
-    public final CRectButton clear = new CRectButton();
+    public final CRectButton NEW = new CRectButton();
     public final CRectButton settings = new CRectButton();
 
     private void setShapeButton(CRectButton button, String label, int x) {
         BoundedString normal = new BoundedString("", 20);
-        normal.setBounds(new CRect(x, 50, 60, 60));
+        normal.setBounds(new CRect(x, 45, 60, 60));
         normal.getBounds().setOutlineColor(Color.WHITE);
         normal.getBounds().setOutlineThickness(2.0);
         normal.setStyle(Font.PLAIN);
 
         BoundedString onFocus = new BoundedString("", 20);
-        onFocus.setBounds(new CRect(x, 50, 63, 63));
+        onFocus.setBounds(new CRect(x, 45, 63, 63));
         onFocus.getBounds().setOutlineColor(Color.WHITE);
         onFocus.getBounds().setOutlineThickness(5.0);
         onFocus.setStyle(Font.BOLD);
 
         BoundedString onSelection = new BoundedString("", 20);
-        onSelection.setBounds(new CRect(x, 50, 60, 60));
+        onSelection.setBounds(new CRect(x, 45, 60, 60));
         onSelection.getBounds().setOutlineColor(Color.GREEN);
         onSelection.getBounds().setOutlineThickness(5.0);
         onSelection.setStyle(Font.BOLD);
@@ -54,16 +54,19 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
     }
 
     public DisplayButtons() {
-        setShapeButton(rectangle, "rectangle", 240);
-        setShapeButton(oval, "oval", 325);
-        setShapeButton(router, "router", 410);
-        setShapeButton(save, "save", 495);
-        setShapeButton(delete, "delete", 580);
-        setShapeButton(duplicate, "duplicate", 665);
-        setShapeButton(load, "load", 750);
-        setShapeButton(clear, "clear", 835);
-        setShapeButton(optimize, "optimize", 920);
-        setShapeButton(settings, "settings", 1005);
+        setShapeButton(NEW, "new", 240);
+        setShapeButton(save, "save", 325);
+        setShapeButton(load, "load", 410);
+
+        setShapeButton(delete, "delete", 500);
+        setShapeButton(duplicate, "duplicate", 585);
+
+        setShapeButton(rectangle, "rectangle", 675);
+        setShapeButton(oval, "oval", 760);
+        setShapeButton(router, "router", 845);
+        setShapeButton(optimize, "optimize", 930);
+
+        setShapeButton(settings, "settings", 1020);
     }
 
     /**
@@ -82,7 +85,7 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
         delete.render(g2d);
         duplicate.render(g2d);
         load.render(g2d);
-        clear.render(g2d);
+        NEW.render(g2d);
         settings.render(g2d);
     }
 
@@ -102,7 +105,7 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
         delete.setFocused(e);
         duplicate.setFocused(e);
         load.setFocused(e);
-        clear.setFocused(e);
+        NEW.setFocused(e);
         settings.setFocused(e);
     }
 
@@ -122,7 +125,7 @@ public class DisplayButtons implements Scalable, Drawable, Focusable {
         delete.scale(d);
         duplicate.scale(d);
         load.scale(d);
-        clear.scale(d);
+        NEW.scale(d);
         settings.scale(d);
     }
 }
